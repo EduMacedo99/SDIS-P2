@@ -1,3 +1,5 @@
+package src.network;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -21,7 +23,7 @@ public class SSLClient extends SSLPeer {
     	this.port = port;
 
         SSLContext context = SSLContext.getInstance("TLS");
-        context.init(create_key_managers("../client.jks", "storepass", "keypass"), create_trust_managers("../trustedCerts.jks", "storepass"), new SecureRandom());
+        context.init(create_key_managers("../keys/client.jks", "storepass", "keypass"), create_trust_managers("../keys/trustedCerts.jks", "storepass"), new SecureRandom());
         engine = context.createSSLEngine(remote_address, port);
         engine.setUseClientMode(true);
 

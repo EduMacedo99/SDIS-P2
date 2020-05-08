@@ -1,3 +1,5 @@
+package src.network;
+
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
@@ -21,8 +23,8 @@ public class SSLServer extends SSLPeer {
 
     public SSLServer(String host_address, int port) throws Exception {
         context = SSLContext.getInstance("TLS");
-        context.init(create_key_managers("../server.jks", "storepass", "keypass"),
-                create_trust_managers("../trustedCerts.jks", "storepass"), new SecureRandom());
+        context.init(create_key_managers("../keys/server.jks", "storepass", "keypass"),
+                create_trust_managers("../keys/trustedCerts.jks", "storepass"), new SecureRandom());
         SSLSession ssl_session = context.createSSLEngine().getSession();
         my_app_data = ByteBuffer.allocate(ssl_session.getApplicationBufferSize());
         my_net_data = ByteBuffer.allocate(ssl_session.getPacketBufferSize());
