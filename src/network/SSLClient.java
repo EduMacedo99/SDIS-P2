@@ -8,7 +8,6 @@ import java.security.SecureRandom;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLSession;
 
 public class SSLClient extends SSLPeer {
@@ -63,85 +62,8 @@ public class SSLClient extends SSLPeer {
         read(socket_channel, engine);
     }
 
-    @Override
-    protected void read(SocketChannel socket_channel, SSLEngine engine) throws Exception {
-        System.out.println("Reading from the server...");
-
-        peer_net_data.clear();
-        int waitToReadMillis = 50;
-        boolean exitReadLoop = false;
-        while (!exitReadLoop) {
-            int bytesRead = socket_channel.read(peer_net_data);
-            if (bytesRead > 0) {
-                peer_net_data.flip();
-                while (peer_net_data.hasRemaining()) {
-                    peer_app_data.clear();
-                    SSLEngineResult result = engine.unwrap(peer_net_data, peer_app_data);
-                    switch (result.getStatus()) {
-                    case OK:
-                        peer_app_data.flip();
-                        handle_server_response(peer_app_data);
-                        exitReadLoop = true;
-                        break;
-                    case BUFFER_OVERFLOW:
-                        peer_app_data = handle_overflow_application(engine, peer_app_data);
-                        break;
-                    case BUFFER_UNDERFLOW:
-                        peer_net_data = handle_buffer_underflow(engine, peer_net_data);
-                        break;
-                    case CLOSED:
-                        close_connection(socket_channel, engine);
-                        return;
-                    default:
-                        throw new IllegalStateException("Invalid SSL status: " + result.getStatus());
-                    }
-                }
-            } else if (bytesRead < 0) {
-                handle_end_of_stream(socket_channel, engine);
-                return;
-            }
-            Thread.sleep(waitToReadMillis);
-        }
-    }
-
-    private void handle_server_response(ByteBuffer peer_app_data) {
-        System.out.println("Server response: " + new String(peer_app_data.array(), 0, 30));
-    }
-
     protected void write(String message) throws Exception {
         write(socket_channel, engine, message);
-    }
-
-    @Override
-    protected void write(SocketChannel socket_channel, SSLEngine engine, String message) throws Exception {
-        System.out.println("Writing to the server...");
-
-        my_app_data.clear();
-        my_app_data.put(message.getBytes());
-        my_app_data.flip();
-        while (my_app_data.hasRemaining()) {
-            // The loop has a meaning for (outgoing) messages larger than 16KB.
-            // Every wrap call will remove 16KB from the original message and send it to the remote peer.
-            my_net_data.clear();
-            SSLEngineResult result = engine.wrap(my_app_data, my_net_data);
-            switch (result.getStatus()) {
-            case OK:
-                my_net_data.flip();
-                while (my_net_data.hasRemaining()) {
-                    socket_channel.write(my_net_data);
-                }
-                System.out.println("Message sent to the server: " + message);
-                break;
-            case BUFFER_OVERFLOW:
-                my_net_data = handle_overflow_packet(engine, my_net_data);
-                break;
-            case CLOSED:
-                close_connection(socket_channel, engine);
-                return;
-            default:
-                throw new IllegalStateException("Invalid SSL status: " + result.getStatus());
-            }
-        }
     }
 
     public void shutdown() throws IOException {

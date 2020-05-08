@@ -17,11 +17,71 @@ public abstract class SSLPeer {
     protected ByteBuffer peer_net_data;
 
     protected ExecutorService executor = Executors.newSingleThreadExecutor();
-    protected abstract void read(SocketChannel socketChannel, SSLEngine engine) throws Exception;
-    protected abstract void write(SocketChannel socketChannel, SSLEngine engine, String message) throws Exception;
 
     protected boolean has_finished(HandshakeStatus handshake_status) {
         return handshake_status == SSLEngineResult.HandshakeStatus.FINISHED || handshake_status == SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING;
+    }
+
+    protected void write(SocketChannel socket_channel, SSLEngine engine, String message) throws Exception {
+
+        my_app_data.clear();
+        my_app_data.put(message.getBytes());
+        my_app_data.flip();
+        while (my_app_data.hasRemaining()) {
+            my_net_data.clear();
+            SSLEngineResult result = engine.wrap(my_app_data, my_net_data);
+            switch (result.getStatus()) {
+            case OK:
+                my_net_data.flip();
+                while (my_net_data.hasRemaining()) {
+                    socket_channel.write(my_net_data);
+                }
+                break;
+            case BUFFER_OVERFLOW:
+                my_net_data = handle_overflow_packet(engine, my_net_data);
+                break;
+            case CLOSED:
+                close_connection(socket_channel, engine);
+                return;
+            default:
+                throw new IllegalStateException("Invalid SSL status: " + result.getStatus());
+            }
+        }
+    }
+
+    protected void read(SocketChannel socket_channel, SSLEngine engine) throws Exception {
+        
+        peer_net_data.clear();
+        int bytesRead = socket_channel.read(peer_net_data);
+        if (bytesRead > 0) {
+            peer_net_data.flip();
+            while (peer_net_data.hasRemaining()) {
+                peer_app_data.clear();
+                SSLEngineResult result = engine.unwrap(peer_net_data, peer_app_data);
+                switch (result.getStatus()) {
+                    case OK:
+                        peer_app_data.flip();
+                        // TODO call message handler
+                        break;
+                    case BUFFER_OVERFLOW:
+                        peer_app_data = handle_overflow_application(engine, peer_app_data);
+                        break;
+                    case BUFFER_UNDERFLOW:
+                        peer_net_data = handle_buffer_underflow(engine, peer_net_data);
+                        break;
+                    case CLOSED:
+                        System.out.println("Client requested to close the connection...");
+                        close_connection(socket_channel, engine);
+                        return;
+                    default:
+                        throw new IllegalStateException("Invalid SSL status: " + result.getStatus());
+                }
+            }
+
+        } else if (bytesRead < 0) {
+            System.err.println("Received end of stream. Will try to close connection with client...");
+            handle_end_of_stream(socket_channel, engine);
+        }
     }
 
     protected boolean do_handshake(SocketChannel socketChannel, SSLEngine engine) throws IOException {

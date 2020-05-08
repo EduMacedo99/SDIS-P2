@@ -4,6 +4,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 public class Utils {
+    public static final int KEY_SIZE = 32;
+    
     public static String hash(byte[] data) {
         MessageDigest messageDigest = null;
         try {
