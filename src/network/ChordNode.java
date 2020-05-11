@@ -10,6 +10,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static src.utils.Utils.*;
+import  src.utils.MessageType;
 
 public class ChordNode implements RMI {
 
@@ -43,8 +44,8 @@ public class ChordNode implements RMI {
         // start server
         String host_address = local_address.getAddress().getHostAddress();
         int port = local_address.getPort();
-        serverRun = new ServerRunnable(host_address, port);
-        new Thread(serverRun).start();
+        serverRun = new ServerRunnable(this, host_address, port);
+        executor.execute(serverRun);
     }
 
     public static void main(String[] args) {
@@ -134,11 +135,12 @@ public class ChordNode implements RMI {
             successor = local_address;
         } else {
             // node is joining an existing circle
-            // TODO search for successor through contact
+            Message msg = new Message(MessageType.JOIN, get_address());
+            MessageSender msg_sender = new MessageSender(this, contact, msg);
+            executor.execute(msg_sender); 
             successor = null;
         }
         update_successor(successor);
-        System.out.println(successor.toString());
 
         // TODO start helper threads
 
@@ -151,9 +153,9 @@ class ServerRunnable implements Runnable {
 
     SSLServer server;
 
-    public ServerRunnable(String ip, int port) {
+    public ServerRunnable(ChordNode peer, String ip, int port) {
         try {
-            server = new SSLServer(ip, port);
+            server = new SSLServer(peer, ip, port);
         } catch (Exception e) {
             e.printStackTrace();
         }

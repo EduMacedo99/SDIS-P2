@@ -7,12 +7,12 @@ public class Message {
     byte[] body;
     
     public Message(String type, String sender_address) {
-        this.header = type + " " + sender_address + " " + CRLF;
+        this.header = type + " " + sender_address + CRLF;
         this.body = "".getBytes();
     }
 
     public Message(String type, String sender_address, Key key) {
-        this.header = type + " " + sender_address + " " + key + " " + CRLF;
+        this.header = type + " " + sender_address + " " + key + CRLF;
         this.body = "".getBytes();
     }
 

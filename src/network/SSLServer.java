@@ -20,7 +20,8 @@ public class SSLServer extends SSLPeer {
     private SSLContext context;
     private Selector selector;
 
-    public SSLServer(String host_address, int port) throws Exception {
+    public SSLServer(ChordNode peer, String host_address, int port) throws Exception {
+        this.peer = peer;
         context = SSLContext.getInstance("TLS");
         context.init(create_key_managers("../keys/server.jks", "storepass", "keypass"),
                 create_trust_managers("../keys/trustedCerts.jks", "storepass"), new SecureRandom());
@@ -38,21 +39,6 @@ public class SSLServer extends SSLPeer {
         serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
 
         active = true;
-    }
-
-    public static void main(String[] args) {
-        String host = "localhost";
-        int port = 9222;
-        if (args.length == 2) {
-            host = args[0];
-            port = Integer.parseInt(args[1]);
-        }
-        try {
-            SSLServer server = new SSLServer(host, port);
-            server.start();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     public boolean isActive() {

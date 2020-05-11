@@ -1,2 +1,2 @@
-javac -d . ../src/network/*.java
-javac -d . ../src/utils/*.java
+javac -d build src/network/*.java
+javac -d build src/utils/*.java

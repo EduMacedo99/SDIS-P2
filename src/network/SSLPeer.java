@@ -17,6 +17,7 @@ public abstract class SSLPeer {
     protected ByteBuffer peer_net_data;
 
     protected ExecutorService executor = Executors.newSingleThreadExecutor();
+    protected ChordNode peer;
 
     protected boolean has_finished(HandshakeStatus handshake_status) {
         return handshake_status == SSLEngineResult.HandshakeStatus.FINISHED || handshake_status == SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING;
@@ -61,7 +62,7 @@ public abstract class SSLPeer {
                 switch (result.getStatus()) {
                     case OK:
                         peer_app_data.flip();
-                        // TODO call message handler
+                        peer.get_executor().execute(new MessageReceiver(peer_app_data));
                         break;
                     case BUFFER_OVERFLOW:
                         peer_app_data = handle_overflow_application(engine, peer_app_data);

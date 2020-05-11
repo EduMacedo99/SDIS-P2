@@ -17,7 +17,8 @@ public class SSLClient extends SSLPeer {
     private SSLEngine engine;
     private SocketChannel socket_channel;
 
-    public SSLClient(String remote_address, int port) throws Exception {
+    public SSLClient(ChordNode peer, String remote_address, int port) throws Exception {
+        this.peer = peer;
         this.remote_address = remote_address;
     	this.port = port;
 
@@ -31,14 +32,6 @@ public class SSLClient extends SSLPeer {
         my_net_data = ByteBuffer.allocate(session.getPacketBufferSize());
         peer_app_data = ByteBuffer.allocate(1024);
         peer_net_data = ByteBuffer.allocate(session.getPacketBufferSize());
-    }
-
-    public static void main(String[] args) throws Exception {
-        SSLClient client = new SSLClient("localhost", 9222);
-        client.connect();
-        client.write("Hello! I am a client!".getBytes());
-		client.read();
-		client.shutdown();
     }
 
     public void connect() throws Exception {
