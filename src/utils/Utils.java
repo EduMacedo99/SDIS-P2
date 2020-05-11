@@ -5,6 +5,7 @@ import java.security.NoSuchAlgorithmException;
 
 public class Utils {
     public static final int KEY_SIZE = 32;
+    public static final String CRLF = "\r\n\r\n";
     
     public static String hash(byte[] data) {
         MessageDigest messageDigest = null;

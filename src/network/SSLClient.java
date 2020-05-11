@@ -36,7 +36,7 @@ public class SSLClient extends SSLPeer {
     public static void main(String[] args) throws Exception {
         SSLClient client = new SSLClient("localhost", 9222);
         client.connect();
-        client.write("Hello! I am a client!");
+        client.write("Hello! I am a client!".getBytes());
 		client.read();
 		client.shutdown();
     }
@@ -62,7 +62,7 @@ public class SSLClient extends SSLPeer {
         read(socket_channel, engine);
     }
 
-    protected void write(String message) throws Exception {
+    protected void write(byte[] message) throws Exception {
         write(socket_channel, engine, message);
     }
 

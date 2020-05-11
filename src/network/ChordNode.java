@@ -6,16 +6,19 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.HashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static src.utils.Utils.*;
 
 public class ChordNode implements RMI {
 
-    ServerRunnable serverRun;
-    Key local_key;
-    InetSocketAddress local_address;
-    InetSocketAddress predecessor;
+    private ServerRunnable serverRun;
+    private Key local_key;
+    private InetSocketAddress local_address;
+    private InetSocketAddress predecessor;
     private HashMap<Integer, InetSocketAddress> finger_table;
+    private ExecutorService executor;
 
     public ChordNode(InetSocketAddress local_address) {
         // initialize local address
@@ -35,6 +38,7 @@ public class ChordNode implements RMI {
         predecessor = null;
 
         //TODO initialize helper threads
+        executor = Executors.newFixedThreadPool(250);
 
         // start server
         String host_address = local_address.getAddress().getHostAddress();
@@ -82,6 +86,15 @@ public class ChordNode implements RMI {
         }
     }
 
+    /* Setters and getters */
+    public String get_address() {
+        return local_address.getAddress().getHostAddress() + ":" + local_address.getPort();
+    }
+
+    public ExecutorService get_executor() {
+        return this.executor;
+    }
+
     /* Service Interface */
 
     public void backup(String filepath, int replication_degree) {
@@ -125,6 +138,7 @@ public class ChordNode implements RMI {
             successor = null;
         }
         update_successor(successor);
+        System.out.println(successor.toString());
 
         // TODO start helper threads
 

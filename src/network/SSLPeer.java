@@ -22,10 +22,10 @@ public abstract class SSLPeer {
         return handshake_status == SSLEngineResult.HandshakeStatus.FINISHED || handshake_status == SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING;
     }
 
-    protected void write(SocketChannel socket_channel, SSLEngine engine, String message) throws Exception {
+    protected void write(SocketChannel socket_channel, SSLEngine engine, byte[] message) throws Exception {
 
         my_app_data.clear();
-        my_app_data.put(message.getBytes());
+        my_app_data.put(message);
         my_app_data.flip();
         while (my_app_data.hasRemaining()) {
             my_net_data.clear();
