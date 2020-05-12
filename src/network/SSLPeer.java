@@ -50,7 +50,7 @@ public abstract class SSLPeer {
         }
     }
 
-    protected void read(SocketChannel socket_channel, SSLEngine engine) throws Exception {
+    protected ByteBuffer read(SocketChannel socket_channel, SSLEngine engine) throws Exception {
         
         peer_net_data.clear();
         int bytesRead = socket_channel.read(peer_net_data);
@@ -63,7 +63,7 @@ public abstract class SSLPeer {
                     case OK:
                         peer_app_data.flip();
                         peer.get_executor().execute(new MessageReceiver(peer_app_data));
-                        break;
+                        return peer_app_data;
                     case BUFFER_OVERFLOW:
                         peer_app_data = handle_overflow_application(engine, peer_app_data);
                         break;
@@ -73,7 +73,7 @@ public abstract class SSLPeer {
                     case CLOSED:
                         System.out.println("Client requested to close the connection...");
                         close_connection(socket_channel, engine);
-                        return;
+                        return null;
                     default:
                         throw new IllegalStateException("Invalid SSL status: " + result.getStatus());
                 }
@@ -83,6 +83,8 @@ public abstract class SSLPeer {
             System.err.println("Received end of stream. Will try to close connection with client...");
             handle_end_of_stream(socket_channel, engine);
         }
+
+        return null;
     }
 
     protected boolean do_handshake(SocketChannel socketChannel, SSLEngine engine) throws IOException {
