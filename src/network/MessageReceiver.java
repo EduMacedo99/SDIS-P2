@@ -29,6 +29,9 @@ public class MessageReceiver implements Runnable {
             case MessageType.JOIN:
                 System.out.println("Message received successfully!");
                 break;
+            case MessageType.PREDECESSOR:
+                System.out.println("Predecessor message received successfully!");
+                break;
         }
     }
     

@@ -8,6 +8,7 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.net.UnknownHostException;
 
 import static src.utils.Utils.*;
 import  src.utils.MessageType;
@@ -21,7 +22,7 @@ public class ChordNode implements RMI {
     private HashMap<Integer, InetSocketAddress> finger_table;
     private ExecutorService executor;
 
-    public ChordNode(InetSocketAddress local_address) {
+    public ChordNode(InetSocketAddress local_address){
         // initialize local address
         this.local_address = local_address;
 
@@ -116,7 +117,10 @@ public class ChordNode implements RMI {
         finger_table.put(key, value);
 
         if (key == 1 && value != null && !value.equals(local_address)) {
-            //TODO notify successor
+            //not sure if okay but think so
+            Message msg = new Message(MessageType.PREDECESSOR, get_address());
+            MessageSender msg_sender = new MessageSender(this, value, msg);
+            executor.execute(msg_sender);
         }
     }
 
