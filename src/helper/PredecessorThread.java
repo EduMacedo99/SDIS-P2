@@ -40,6 +40,7 @@ public class PredecessorThread extends HelperThread{
         Message msg = new Message(MessageType.REQUEST_KEY, chordNode.get_address());
         MessageSender msg_sender = new MessageSender(chordNode, predecessor, msg);
         executor.execute(msg_sender);
+        System.out.println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" + chordNode.get_last_responde());
 
 
 

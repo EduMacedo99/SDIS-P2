@@ -15,6 +15,7 @@ import static src.utils.Utils.*;
 
 import src.helper.UpdateFingersThread;
 import src.helper.HelperThread;
+import src.helper.PredecessorThread;
 import  src.utils.MessageType;
 
 public class ChordNode implements RMI {
@@ -25,8 +26,10 @@ public class ChordNode implements RMI {
     private InetSocketAddress predecessor;
     private HashMap<Integer, InetSocketAddress> finger_table;
     private ExecutorService executor;
+    private String last_response;
 
     private HelperThread checkFingers;
+    private PredecessorThread predecessor_thread;
 
 
     public ChordNode(InetSocketAddress local_address){
@@ -49,6 +52,9 @@ public class ChordNode implements RMI {
         //TODO initialize helper threads
         executor = Executors.newFixedThreadPool(250);
         checkFingers = new UpdateFingersThread(this, finger_table, 1000);
+        predecessor_thread = new PredecessorThread(this);
+        //predecessor_thread.start();
+
 
         // start server
         String host_address = local_address.getAddress().getHostAddress();
@@ -107,6 +113,18 @@ public class ChordNode implements RMI {
 
     public ExecutorService get_executor() {
         return this.executor;
+    }
+
+    public String get_last_responde(){
+        return last_response;
+    }
+
+    public void set_last_responde(String response) {
+        this.last_response = response;
+    }
+
+    public Key get_local_key() {
+        return local_key;
     }
 
     /* Service Interface */

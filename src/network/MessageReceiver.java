@@ -14,11 +14,12 @@ public class MessageReceiver implements Runnable {
     private String type;
     private ChordNode peer;
     private InetSocketAddress ip_sender;
+    private String string_msg;
 
     public MessageReceiver(ByteBuffer msg, ChordNode peer){
         this.peer = peer;
         byte[] message = trim_message(msg.array());
-        String string_msg = new String(message);
+        string_msg = new String(message);
         String[] pieces = string_msg.split(CRLF);
         header = pieces[0];
         type = header.split(" ")[0];
@@ -37,9 +38,9 @@ public class MessageReceiver implements Runnable {
     
     @Override
     public void run() {
+        peer.set_last_responde(string_msg);
         switch(type) {
             case MessageType.JOIN:
-                System.out.println("Message received successfully!");
                 Message msg = new Message(MessageType.OK , peer.get_address());
                 MessageSender msg_sender = new MessageSender(peer, ip_sender, msg);
                 peer.get_executor().execute(msg_sender); 
@@ -47,14 +48,15 @@ public class MessageReceiver implements Runnable {
             case MessageType.PREDECESSOR:
                 System.out.println("Predecessor message received successfully!");
                 break;
-<<<<<<< HEAD
             case MessageType.REQUEST_KEY:
                 System.out.println("Message requesting key received");
+                Message msg_key = new Message(peer.get_local_key().toString(), peer.get_address());
+                MessageSender msg_key_sender = new MessageSender(peer, ip_sender, msg_key);
+                peer.get_executor().execute(msg_key_sender);
+                break;
                 
-=======
             case MessageType.OK:
                 System.out.println("Response message received successfully!");
->>>>>>> ab24f738a38735b57d8e9c69d18d8d18c7b717e6
                 break;
         }
     }
