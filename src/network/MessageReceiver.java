@@ -47,14 +47,15 @@ public class MessageReceiver implements Runnable {
                 break;
             case MessageType.PREDECESSOR:
                 System.out.println("Predecessor message received successfully!");
+                peer.set_predecessor(ip_sender);
+                System.out.println(ip_sender);
                 break;
             case MessageType.REQUEST_KEY:
                 System.out.println("Message requesting key received");
-                Message msg_key = new Message(peer.get_local_key().toString(), peer.get_address());
+                Message msg_key = new Message(MessageType.SENDING_KEY + peer.get_local_key().toString(), peer.get_address());
                 MessageSender msg_key_sender = new MessageSender(peer, ip_sender, msg_key);
                 peer.get_executor().execute(msg_key_sender);
                 break;
-                
             case MessageType.OK:
                 System.out.println("Response message received successfully!");
                 break;

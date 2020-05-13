@@ -53,8 +53,7 @@ public class ChordNode implements RMI {
         executor = Executors.newFixedThreadPool(250);
         checkFingers = new UpdateFingersThread(this, finger_table, 1000);
         predecessor_thread = new PredecessorThread(this);
-        //predecessor_thread.start();
-
+        
 
         // start server
         String host_address = local_address.getAddress().getHostAddress();
@@ -100,6 +99,7 @@ public class ChordNode implements RMI {
         if (!node.join(contact)) {
             return;
         }
+
     }
 
     /* Setters and getters */
@@ -107,8 +107,16 @@ public class ChordNode implements RMI {
         return local_address.getAddress().getHostAddress() + ":" + local_address.getPort();
     }
 
+    public InetSocketAddress get_local_address() {
+        return local_address;
+    }
+
     public InetSocketAddress get_predecessor() {
         return predecessor;
+    }
+
+    public void set_predecessor(InetSocketAddress predecessor) {
+        this.predecessor = predecessor;
     }
 
     public ExecutorService get_executor() {
@@ -147,6 +155,8 @@ public class ChordNode implements RMI {
         finger_table.put(key, value);
 
         if (key == 1 && value != null && !value.equals(local_address)) {
+            
+            //this is probably wrong, dont really know what I should be doing here >:(
             Message msg = new Message(MessageType.PREDECESSOR, get_address());
             MessageSender msg_sender = new MessageSender(this, value, msg);
             executor.execute(msg_sender);
@@ -177,6 +187,7 @@ public class ChordNode implements RMI {
 
         // TODO start helper threads
         this.checkFingers.start();
+        this.predecessor_thread.start();
 
         System.out.println("Joined circle successfully!");
         return true;
@@ -208,6 +219,22 @@ public class ChordNode implements RMI {
         }
         //TODO: nao tenho a certeza se apanha todos os casos
         return successor;
+    }
+
+    //Notifica o succesor que é o predecessor. Ao receber a mensagem o node já atualiza o seu predecessor (linha 50 - MessageReceiver.java)
+    //TO DO : onde chamo isto? construção da finger table/calculo do sucessor tem de estar pronto antes disto ser chamado
+    public boolean notify(InetSocketAddress successor) {
+
+        if (successor.equals(this.get_local_address())) {
+            System.out.println("successor is self :/");
+            return false;
+        }
+
+        Message msg = new Message(MessageType.PREDECESSOR, get_address());
+        MessageSender msg_sender = new MessageSender(this, successor, msg);
+        executor.execute(msg_sender);
+        return true;
+        
     }
 }
 
