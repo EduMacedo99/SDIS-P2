@@ -2,7 +2,6 @@ package src.network;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.concurrent.ExecutorService;
 
 import static src.utils.Utils.*;
 import src.utils.MessageType;
@@ -38,7 +37,7 @@ public class MessageReceiver implements Runnable {
     
     @Override
     public void run() {
-        peer.set_last_responde(string_msg);
+        peer.set_last_response(string_msg);
         switch(type) {
             case MessageType.JOIN:
                 Message msg = new Message(MessageType.OK , peer.get_address());

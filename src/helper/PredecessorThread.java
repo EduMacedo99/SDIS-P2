@@ -12,7 +12,7 @@ import java.net.InetSocketAddress;
  *  -ver se o predecessor checks out
  *  -arranjar a finger table
  *  -confirmar o sucessor
- *  há mais???
+ *  há mais?
 */
 
 
@@ -43,9 +43,6 @@ public class PredecessorThread extends HelperThread{
         Message msg = new Message(MessageType.REQUEST_KEY, chordNode.get_address());
         MessageSender msg_sender = new MessageSender(chordNode, predecessor, msg);
         executor.execute(msg_sender);
-
-
-
 
     }
 

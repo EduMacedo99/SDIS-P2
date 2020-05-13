@@ -123,11 +123,11 @@ public class ChordNode implements RMI {
         return this.executor;
     }
 
-    public String get_last_responde(){
+    public String get_last_response(){
         return last_response;
     }
 
-    public void set_last_responde(String response) {
+    public void set_last_response(String response) {
         this.last_response = response;
     }
 
