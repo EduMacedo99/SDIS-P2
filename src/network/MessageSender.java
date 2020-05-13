@@ -8,7 +8,7 @@ public class MessageSender implements Runnable {
     private ChordNode peer;
     private InetSocketAddress destination;
     private Message msg;
-    public ByteBuffer response = null;
+    public byte[] response;
 
     public MessageSender(ChordNode peer, InetSocketAddress destination, Message msg) {
         this.peer = peer;
@@ -24,6 +24,7 @@ public class MessageSender implements Runnable {
             client.write(msg.get_bytes());
             while(true){
                 response = client.read();
+                //TODO: a resposta da sempre null
                 if(response == null)//Client requested to close the connection
                     break;
             }

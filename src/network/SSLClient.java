@@ -51,7 +51,7 @@ public class SSLClient extends SSLPeer {
         }
     }
 
-    protected ByteBuffer read() throws Exception {
+    protected byte[] read() throws Exception {
        return read(socket_channel, engine);
     }
 

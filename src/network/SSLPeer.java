@@ -50,7 +50,7 @@ public abstract class SSLPeer {
         }
     }
 
-    protected ByteBuffer read(SocketChannel socket_channel, SSLEngine engine) throws Exception {
+    protected byte[] read(SocketChannel socket_channel, SSLEngine engine) throws Exception {
         
         peer_net_data.clear();
         int bytesRead = socket_channel.read(peer_net_data);
@@ -63,7 +63,7 @@ public abstract class SSLPeer {
                     case OK:
                         peer_app_data.flip();
                         peer.get_executor().execute(new MessageReceiver(peer_app_data));
-                        return peer_app_data;
+                        return peer_app_data.array();
                     case BUFFER_OVERFLOW:
                         peer_app_data = handle_overflow_application(engine, peer_app_data);
                         break;
