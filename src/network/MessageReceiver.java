@@ -20,7 +20,7 @@ public class MessageReceiver implements Runnable {
         int separation_index = string_msg.indexOf(CRLF);
         body = new byte[message.length - header.length() - 4];
         System.arraycopy(message, separation_index + 4, body, 0, body.length);
-        //System.out.println("Message received: " + string_msg);
+        System.out.println("Message received: " + string_msg);
     }
     
     @Override
@@ -31,6 +31,10 @@ public class MessageReceiver implements Runnable {
                 break;
             case MessageType.PREDECESSOR:
                 System.out.println("Predecessor message received successfully!");
+                break;
+            case MessageType.REQUEST_KEY:
+                System.out.println("Message requesting key received");
+                
                 break;
         }
     }

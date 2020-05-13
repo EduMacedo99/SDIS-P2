@@ -93,6 +93,10 @@ public class ChordNode implements RMI {
         return local_address.getAddress().getHostAddress() + ":" + local_address.getPort();
     }
 
+    public InetSocketAddress get_predecessor() {
+        return predecessor;
+    }
+
     public ExecutorService get_executor() {
         return this.executor;
     }

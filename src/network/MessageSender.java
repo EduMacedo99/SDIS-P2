@@ -2,13 +2,15 @@ package src.network;
 
 import java.net.InetSocketAddress;
 
+import java.nio.ByteBuffer;
+
 public class MessageSender implements Runnable {
 
     private ChordNode peer;
     private InetSocketAddress destination;
     private Message msg;
 
-    public MessageSender(ChordNode peer, InetSocketAddress destination, Message msg) {
+    public MessageSender(ChordNode peer, InetSocketAddress destination, Message msg/*, SSLClient client*/) {
         this.peer = peer;
         this.destination = destination;
         this.msg = msg;
