@@ -61,7 +61,7 @@ public class SSLServer extends SSLPeer {
                 if (key.isAcceptable()) {
                     accept(key);
                 } else if (key.isReadable()) {
-                    read((SocketChannel) key.channel(), (SSLEngine) key.attachment());
+                    read((SocketChannel) key.channel(), (SSLEngine) key.attachment() );
                 }
             }
         }
