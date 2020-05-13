@@ -24,6 +24,7 @@ public class ChordNode implements RMI {
     private Key local_key;
     private InetSocketAddress local_address;
     private InetSocketAddress predecessor;
+    private InetSocketAddress join_addr;
     private HashMap<Integer, InetSocketAddress> finger_table;
     private ExecutorService executor;
     private String last_response;
@@ -53,8 +54,7 @@ public class ChordNode implements RMI {
         executor = Executors.newFixedThreadPool(250);
         checkFingers = new UpdateFingersThread(this, 1000);
         predecessor_thread = new PredecessorThread(this);
-        //predecessor_thread.start();
-
+        
 
         // start server
         String host_address = local_address.getAddress().getHostAddress();
@@ -100,6 +100,7 @@ public class ChordNode implements RMI {
         if (!node.join(contact)) {
             return;
         }
+
     }
 
     /* Setters and getters */
@@ -107,19 +108,27 @@ public class ChordNode implements RMI {
         return local_address.getAddress().getHostAddress() + ":" + local_address.getPort();
     }
 
+    public InetSocketAddress get_local_address() {
+        return local_address;
+    }
+
     public InetSocketAddress get_predecessor() {
         return predecessor;
+    }
+
+    public void set_predecessor(InetSocketAddress predecessor) {
+        this.predecessor = predecessor;
     }
 
     public ExecutorService get_executor() {
         return this.executor;
     }
 
-    public String get_last_responde(){
+    public String get_last_response(){
         return last_response;
     }
 
-    public void set_last_responde(String response) {
+    public void set_last_response(String response) {
         this.last_response = response;
     }
 
@@ -147,6 +156,8 @@ public class ChordNode implements RMI {
         finger_table.put(key, value);
 
         if (key == 1 && value != null && !value.equals(local_address)) {
+            
+            //this is probably wrong, dont really know what I should be doing here >:(
             Message msg = new Message(MessageType.PREDECESSOR, get_address());
             MessageSender msg_sender = new MessageSender(this, value, msg);
             executor.execute(msg_sender);
@@ -177,6 +188,7 @@ public class ChordNode implements RMI {
 
         // TODO start helper threads
         this.checkFingers.start();
+        this.predecessor_thread.start();
 
         System.out.println("Joined circle successfully!");
         return true;
@@ -184,26 +196,25 @@ public class ChordNode implements RMI {
 
     public boolean betweenKeys(long key0, long key, long key1) {
         // if key is between the two keys in the ring: ... key0 -> key -> key1 ...
-        //System.out.println("*---------------------- " + key0 + "---" + key + "---" + key1);
         if ((key0 < key && key <= key1) || ((key0 > key1) && (key0 < key || key <= key1))){
             return true;
         }
         return false;
     } 
 
+    //TODO: ainda não recebe as respostas
     public InetSocketAddress getSuccessor(long key) {
 
         InetSocketAddress successor_addr = null;
 
-        // If node joined recently in the circle and has no info, ask predecessor
+        // If node joined recently in the circle and has no info, ask predecessor(join_addr)
         if(finger_table.get(1) == null){
-            System.out.println("Sending message to " + predecessor + " to search key " + key );
+            System.out.println("Sending message to " + join_addr + " to search key " + key );
             Message msg = new Message(MessageType.SEARCH_SUCCESSOR_KEY, get_address());
             msg.set_body(("" + key).getBytes());
-            MessageSender msg_sender = new MessageSender(this, predecessor, msg);
+            MessageSender msg_sender = new MessageSender(this, join_addr, msg);
             executor.execute(msg_sender); 
 
-            //TODO: get response
             return null;
         }
    
@@ -232,10 +243,8 @@ public class ChordNode implements RMI {
             MessageSender msg_sender = new MessageSender(this, successor_addr, msg);
             executor.execute(msg_sender); 
 
-            //TODO: get response
-
         }else
-            System.err.println("No nodes to send shearch successor key message!!");
+            System.err.println("No nodes to shearch successor key!!");
 
         return null;
     }
@@ -251,11 +260,25 @@ public class ChordNode implements RMI {
         }
     }
 
-	public void startJoinFingers(InetSocketAddress new_addr) {
-        predecessor = new_addr;
-        //for (int i = 1; i <= KEY_SIZE; i++) 
-        //   update_ith_finger(i, new_addr);
-	}
+	public void startJoinFingers(InetSocketAddress new_addr){
+        join_addr = new_addr;
+    }
+    
+    //Notifica o succesor que é o predecessor. Ao receber a mensagem o node já atualiza o seu predecessor (linha 50 - MessageReceiver.java)
+    //TO DO : onde chamo isto? construção da finger table/calculo do sucessor tem de estar pronto antes disto ser chamado
+    public boolean notify(InetSocketAddress successor) {
+
+        if (successor.equals(this.get_local_address())) {
+            System.out.println("successor is self :/");
+            return false;
+        }
+
+        Message msg = new Message(MessageType.PREDECESSOR, get_address());
+        MessageSender msg_sender = new MessageSender(this, successor, msg);
+        executor.execute(msg_sender);
+        return true;
+        
+    }
 }
 
 class ServerRunnable implements Runnable {

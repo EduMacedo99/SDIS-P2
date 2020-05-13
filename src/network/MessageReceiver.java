@@ -2,7 +2,6 @@ package src.network;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.concurrent.ExecutorService;
 
 import static src.utils.Utils.*;
 import src.utils.MessageType;
@@ -38,7 +37,7 @@ public class MessageReceiver implements Runnable {
     
     @Override
     public void run() {
-        peer.set_last_responde(string_msg);
+        peer.set_last_response(string_msg);
         switch(type) {
             case MessageType.JOIN:
                 Message msg = new Message(MessageType.OK , peer.get_address());
@@ -48,21 +47,22 @@ public class MessageReceiver implements Runnable {
                 break;
             case MessageType.PREDECESSOR:
                 System.out.println("Predecessor message received successfully!");
+                peer.set_predecessor(ip_sender);
+                System.out.println(ip_sender);
                 break;
             case MessageType.REQUEST_KEY:
                 System.out.println("Message requesting key received");
-                Message msg_key = new Message(peer.get_local_key().toString(), peer.get_address());
+                Message msg_key = new Message(MessageType.SENDING_KEY + peer.get_local_key().toString(), peer.get_address());
                 MessageSender msg_key_sender = new MessageSender(peer, ip_sender, msg_key);
                 peer.get_executor().execute(msg_key_sender);
                 break;
-                
             case MessageType.OK:
                 System.out.println("Response message received successfully!");
                 peer.startJoinFingers(ip_sender);
                 break;
 
             case MessageType.SEARCH_SUCCESSOR_KEY:
-                System.out.println("Message search who has the key, received successfully!");
+                System.out.println("Message: search who has the key, received successfully!");
                /* Message msg2 = new Message(MessageType.FOUND_SUCCESSOR_KEY , peer.get_address());
                 long key = (long)body[0];
                 InetSocketAddress response = peer.getSuccessor(key);
@@ -72,7 +72,7 @@ public class MessageReceiver implements Runnable {
                 break;
             
             case MessageType.FOUND_SUCCESSOR_KEY:
-                System.out.println("Message found who has the key, received successfully!");
+                System.out.println("Message: found who has the key, received successfully!");
                /* System.out.println("--- " + body.toString());
                 //peer.update_ith_finger(key, value);*/
                 break;

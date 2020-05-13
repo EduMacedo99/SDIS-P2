@@ -9,10 +9,10 @@ import java.net.InetSocketAddress;
 
 /**
  * TO DO helpers:
- *  -ver se o predecesor checks out
+ *  -ver se o predecessor checks out
  *  -arranjar a finger table
  *  -confirmar o sucessor
- *  há mais???
+ *  há mais?
 */
 
 
@@ -20,7 +20,7 @@ import java.net.InetSocketAddress;
 public class PredecessorThread extends HelperThread{
     
 
-    private static final int wait_time = 1000;
+    private static final int wait_time = 2500;
     private ExecutorService executor;
     private ChordNode chordNode;
 
@@ -35,15 +35,14 @@ public class PredecessorThread extends HelperThread{
     public void run() {
 
         InetSocketAddress predecessor = chordNode.get_predecessor();
-
+        if (predecessor == null) {
+            System.out.println("No predecessor on node with local key: " + chordNode.get_local_key().toString());
+            return;
+        }
 
         Message msg = new Message(MessageType.REQUEST_KEY, chordNode.get_address());
         MessageSender msg_sender = new MessageSender(chordNode, predecessor, msg);
         executor.execute(msg_sender);
-        System.out.println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" + chordNode.get_last_responde());
-
-
-
 
     }
 
