@@ -20,7 +20,7 @@ public class SSLClient extends SSLPeer {
     public SSLClient(ChordNode peer, String remote_address, int port) throws Exception {
         this.peer = peer;
         this.remote_address = remote_address;
-    	this.port = port;
+        this.port = port;
 
         SSLContext context = SSLContext.getInstance("TLS");
         context.init(create_key_managers("../keys/client.jks", "storepass", "keypass"), create_trust_managers("../keys/trustedCerts.jks", "storepass"), new SecureRandom());
@@ -51,7 +51,7 @@ public class SSLClient extends SSLPeer {
         }
     }
 
-    protected byte[] read() throws Exception {
+    protected ByteBuffer read() throws Exception {
        return read(socket_channel, engine);
     }
 
