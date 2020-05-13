@@ -44,6 +44,7 @@ public class MessageReceiver implements Runnable {
                 Message msg = new Message(MessageType.OK , peer.get_address());
                 MessageSender msg_sender = new MessageSender(peer, ip_sender, msg);
                 peer.get_executor().execute(msg_sender); 
+                peer.updateJoinFingers(ip_sender);
                 break;
             case MessageType.PREDECESSOR:
                 System.out.println("Predecessor message received successfully!");
@@ -57,6 +58,23 @@ public class MessageReceiver implements Runnable {
                 
             case MessageType.OK:
                 System.out.println("Response message received successfully!");
+                peer.startJoinFingers(ip_sender);
+                break;
+
+            case MessageType.SEARCH_SUCCESSOR_KEY:
+                System.out.println("Message search who has the key, received successfully!");
+               /* Message msg2 = new Message(MessageType.FOUND_SUCCESSOR_KEY , peer.get_address());
+                long key = (long)body[0];
+                InetSocketAddress response = peer.getSuccessor(key);
+                msg2.set_body((response.toString() + key).getBytes());
+                MessageSender msg_sender2 = new MessageSender(peer, ip_sender, msg2);
+                peer.get_executor().execute(msg_sender2); */
+                break;
+            
+            case MessageType.FOUND_SUCCESSOR_KEY:
+                System.out.println("Message found who has the key, received successfully!");
+               /* System.out.println("--- " + body.toString());
+                //peer.update_ith_finger(key, value);*/
                 break;
         }
     }
