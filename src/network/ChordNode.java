@@ -6,11 +6,15 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.HashMap;
+import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.net.UnknownHostException;
 
 import static src.utils.Utils.*;
+
+import src.helper.UpdateFingersThread;
+import src.helper.HelperThread;
 import  src.utils.MessageType;
 
 public class ChordNode implements RMI {
@@ -21,6 +25,9 @@ public class ChordNode implements RMI {
     private InetSocketAddress predecessor;
     private HashMap<Integer, InetSocketAddress> finger_table;
     private ExecutorService executor;
+
+    private HelperThread checkFingers;
+
 
     public ChordNode(InetSocketAddress local_address){
         // initialize local address
@@ -41,6 +48,7 @@ public class ChordNode implements RMI {
 
         //TODO initialize helper threads
         executor = Executors.newFixedThreadPool(250);
+        checkFingers = new UpdateFingersThread(this, finger_table, 1000);
 
         // start server
         String host_address = local_address.getAddress().getHostAddress();
@@ -117,11 +125,10 @@ public class ChordNode implements RMI {
 
     /* Chord related methods */
 
-    private void update_ith_finger(int key, InetSocketAddress value) {
+    public void update_ith_finger(int key, InetSocketAddress value) {
         finger_table.put(key, value);
 
         if (key == 1 && value != null && !value.equals(local_address)) {
-            //not sure if okay but think so
             Message msg = new Message(MessageType.PREDECESSOR, get_address());
             MessageSender msg_sender = new MessageSender(this, value, msg);
             executor.execute(msg_sender);
@@ -151,9 +158,38 @@ public class ChordNode implements RMI {
         update_successor(successor);
 
         // TODO start helper threads
+        this.checkFingers.start();
 
         System.out.println("Joined circle successfully!");
         return true;
+    }
+
+    public boolean betweenKeys(long key0, int key, long key1) {
+        // if key is between the two keys in the ring: ... key0 -> key -> key1 ...
+        if ((key0 < key && key <= key1) || (key0 > key1) && (key0 < key || key <= key1))
+            return true;
+        return false;
+    } 
+
+    public InetSocketAddress getSuccessor(int key) {
+
+        InetSocketAddress successor = null;
+
+        for (Entry<Integer, InetSocketAddress> finger : finger_table.entrySet()) {
+
+            if (finger.getValue() != null){
+
+                // get next node
+                successor = finger.getValue();
+                Key successor_key = Key.create_key_from_address(successor);
+
+                if(betweenKeys(this.local_key.key, key, successor_key.key )){
+                    break;
+                }
+            }
+        }
+        //TODO: nao tenho a certeza se apanha todos os casos
+        return successor;
     }
 }
 

@@ -51,8 +51,8 @@ public class SSLClient extends SSLPeer {
         }
     }
 
-    protected void read() throws Exception {
-        read(socket_channel, engine);
+    protected byte[] read() throws Exception {
+       return read(socket_channel, engine);
     }
 
     protected void write(byte[] message) throws Exception {
