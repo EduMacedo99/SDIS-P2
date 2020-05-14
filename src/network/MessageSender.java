@@ -3,7 +3,6 @@ package src.network;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-import java.nio.ByteBuffer;
 
 public class MessageSender implements Runnable {
 
