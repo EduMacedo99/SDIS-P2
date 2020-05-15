@@ -6,6 +6,8 @@ import src.utils.MessageType;
 import java.util.concurrent.ExecutorService;
 import java.net.InetSocketAddress;
 
+import static src.utils.Utils.requestMessage;
+
 /**
  * called periodically. 
  * checks whether predecessor has failed.
@@ -14,13 +16,11 @@ public class PredecessorThread extends HelperThread{
     
 
     private static final int wait_time = 3000;
-    private ExecutorService executor;
     private ChordNode chordNode;
 
     public PredecessorThread(ChordNode node) {
         super(wait_time);
         this.chordNode = node;
-        executor = chordNode.get_executor();
     }
 
     @Override
@@ -38,8 +38,12 @@ public class PredecessorThread extends HelperThread{
         // checks if predecessor still lives
         // TODO: apanhar o erro de envio de mensagem caso não esteja vivo
         Message msg = new Message(MessageType.REQUEST_KEY, chordNode.get_address());
-        MessageSender msg_sender = new MessageSender(chordNode, predecessor, msg);
-        executor.execute(msg_sender);
+        byte[] a = requestMessage(chordNode,  predecessor, 100, msg);
+        System.out.println("PREDECESSOR ALIVE: " + new String(a) );
+
+
+        //while(chordNode.get_last_response() == null || !chordNode.get_last_response().contains("SENDING_KEY")){}
+        //System.out.println("Message received: your predecessor is still alive");
 
     }
 

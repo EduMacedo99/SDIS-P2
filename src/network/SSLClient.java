@@ -35,7 +35,7 @@ public class SSLClient extends SSLPeer {
     }
 
     public void connect() throws Exception {
-        //System.out.println("Requesting connection...");
+        System.out.println("Requesting connection...");
     	socket_channel = SocketChannel.open();
     	socket_channel.configureBlocking(false);
     	socket_channel.connect(new InetSocketAddress(remote_address, port));
@@ -44,14 +44,14 @@ public class SSLClient extends SSLPeer {
 
         engine.beginHandshake();
         if (do_handshake(socket_channel, engine)) {
-            //System.out.println("Connection established!");
+            System.out.println("Connection established!");
         } else {
             socket_channel.close();
             System.err.println("Connection closed due to handshake failure.");
         }
     }
 
-    protected ByteBuffer read() throws Exception {
+    public ByteBuffer read() throws Exception {
        return read(socket_channel, engine);
     }
 
@@ -60,7 +60,7 @@ public class SSLClient extends SSLPeer {
     }
 
     public void shutdown() throws IOException {
-        //System.out.println("Requesting to close connection with the server...");
+        System.out.println("Requesting to close connection with the server...");
         close_connection(socket_channel, engine);
         executor.shutdown();
     }

@@ -8,6 +8,9 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
+
+import javax.net.ssl.SSLEngine;
 
 import static src.utils.Utils.*;
 import src.utils.MessageType;
@@ -20,6 +23,8 @@ public class MessageReceiver implements Runnable {
     private ChordNode peer;
     private InetSocketAddress ip_sender;
     private String string_msg;
+    private SocketChannel socket_channel;
+    private SSLEngine engine;
 
     private Message msg = null;
     private MessageSender msg_sender = null;
@@ -31,8 +36,12 @@ public class MessageReceiver implements Runnable {
     private ObjectInput in;
     private byte[] bytes;
 
-    public MessageReceiver(ByteBuffer msg, ChordNode peer){
+    public MessageReceiver(ByteBuffer msg, ChordNode peer, SocketChannel socket_channel, SSLEngine engine) {
+
+        this.socket_channel = socket_channel;
+        this.engine = engine;
         this.peer = peer;
+
         byte[] message = trim_message(msg.array());
         string_msg = new String(message);
         String[] pieces = string_msg.split(CRLF);
@@ -47,41 +56,40 @@ public class MessageReceiver implements Runnable {
         int separation_index = string_msg.indexOf(CRLF);
         body = new byte[message.length - header.length() - 4];
         System.arraycopy(message, separation_index + 4, body, 0, body.length);
-        //System.out.println("Message received: " + ip_sender);
-        //System.out.println("Node peer: " + peer.get_address());
+        // System.out.println("Message received: " + ip_sender);
+        // System.out.println("Node peer: " + peer.get_address());
     }
-    
+
     @Override
     public void run() {
         peer.set_last_response(string_msg);
-        switch(type) {
+        switch (type) {
             case MessageType.JOIN:
-                msg = new Message(MessageType.OK , peer.get_address());
-                msg_sender = new MessageSender(peer, ip_sender, msg);
-                peer.get_executor().execute(msg_sender); 
+                msg = new Message(MessageType.OK, peer.get_address());
+                byte[] a = requestMessage(peer, ip_sender, 100, msg);
+
                 break;
 
             case MessageType.OK:
                 System.out.println("Response message received successfully!");
                 break;
-            
+
             // EDU
-            /*case MessageType.PREDECESSOR:
-                System.out.println("Predecessor message received successfully!");
-                //peer.set_predecessor(ip_sender);
-                System.out.println(ip_sender);
-                break;
-            */
-            
+            /*
+             * case MessageType.PREDECESSOR:
+             * System.out.println("Predecessor message received successfully!");
+             * //peer.set_predecessor(ip_sender); System.out.println(ip_sender); break;
+             */
+
             case MessageType.GET_PREDECESSOR:
                 System.out.println("Message received: send your predecessor to " + ip_sender);
-                msg = new Message(MessageType.RECEIVED_PREDECESSOR , peer.get_address());
+                msg = new Message(MessageType.RECEIVED_PREDECESSOR, peer.get_address());
                 addr_response = peer.get_predecessor();
                 bos = new ByteArrayOutputStream();
                 out = null;
                 bytes = null;
                 try {
-                    out = new ObjectOutputStream(bos);   
+                    out = new ObjectOutputStream(bos);
                     out.writeObject(addr_response);
                     out.flush();
                     bytes = bos.toByteArray();
@@ -97,8 +105,16 @@ public class MessageReceiver implements Runnable {
                     }
                 }
                 msg.set_body(bytes);
-                msg_sender = new MessageSender(peer, ip_sender, msg);
-                peer.get_executor().execute(msg_sender);
+
+                try {
+                    SSLClient client2 = new SSLClient(peer, null, 0);
+                    client2.write(socket_channel, engine, bytes);
+                } catch (Exception e1) {
+                    e1.printStackTrace();
+                }
+
+                //byte[] a7 = requestMessage(peer,  ip_sender, 100, msg);
+        
                 break;
                 
             case MessageType.RECEIVED_PREDECESSOR:
@@ -135,8 +151,8 @@ public class MessageReceiver implements Runnable {
                 }
                 // successor.notify(n)
                 Message msg = new Message(MessageType.NOTIFY_IM_PREDECESSOR, peer.get_address());
-                MessageSender msg_sender = new MessageSender(peer, successor, msg);
-                peer.get_executor().execute(msg_sender);
+                byte[] a8 = requestMessage(peer,  successor, 100, msg);
+                
                 break;
 
             case MessageType.NOTIFY_IM_PREDECESSOR:
@@ -147,8 +163,8 @@ public class MessageReceiver implements Runnable {
             case MessageType.REQUEST_KEY:
                 System.out.println("Message received: asking if i am alive");
                 msg = new Message(MessageType.SENDING_KEY, peer.get_address());
-                msg_sender = new MessageSender(peer, ip_sender, msg);
-                peer.get_executor().execute(msg_sender);
+                byte[] a2 = requestMessage(peer,  ip_sender, 100, msg);
+          
                 break;
             
             case MessageType.SENDING_KEY:
@@ -197,9 +213,9 @@ public class MessageReceiver implements Runnable {
                     }
                 }
                 msg.set_body(bytes);
-                msg_sender = new MessageSender(peer, ip_sender, msg);
                 System.out.println("Message sent: i found the key " + key_response + " in " + addr_response );
-                peer.get_executor().execute(msg_sender);
+                byte[] a3 = requestMessage(peer,  ip_sender, 100, msg);
+               
                 break;
             
             case MessageType.FOUND_SUCCESSOR_KEY:

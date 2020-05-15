@@ -47,7 +47,7 @@ public class SSLServer extends SSLPeer {
 
     public void start() throws Exception {
 
-        //System.out.println("Server ready!\nWaiting for new connections...");
+        System.out.println("Server ready!\nWaiting for new connections...");
 
         while (isActive()) {
             selector.select();
@@ -66,11 +66,11 @@ public class SSLServer extends SSLPeer {
             }
         }
 
-        //System.out.println("Server closed!");
+        System.out.println("Server closed!");
     }
 
     public void stop() {
-        //System.out.println("Will now close server...");
+        System.out.println("Will now close server...");
         active = false;
         executor.shutdown();
         selector.wakeup();
@@ -78,7 +78,7 @@ public class SSLServer extends SSLPeer {
 
     private void accept(SelectionKey key) throws Exception {
 
-        //System.out.println("New connection request!");
+        System.out.println("New connection request!");
 
         SocketChannel socketChannel = ((ServerSocketChannel) key.channel()).accept();
         socketChannel.configureBlocking(false);
@@ -88,11 +88,11 @@ public class SSLServer extends SSLPeer {
         engine.beginHandshake();
 
         if (do_handshake(socketChannel, engine)) {
-            //System.out.println("Connection established!");
+            System.out.println("Connection established!");
             socketChannel.register(selector, SelectionKey.OP_READ, engine);
         } else {
             socketChannel.close();
-            //System.out.println("Connection closed due to handshake failure.");
+            System.out.println("Connection closed due to handshake failure.");
         }
     }
 }

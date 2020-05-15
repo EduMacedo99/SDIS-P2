@@ -32,6 +32,8 @@ public class FixFingersThread extends HelperThread{
         }
         System.out.println("FT predecessor -> " + node.get_predecessor());
         System.out.println("FT successor -> " + node.get_successor() + "\n");
+
+
     }
 
 
