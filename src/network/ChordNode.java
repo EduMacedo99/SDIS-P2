@@ -1,5 +1,8 @@
 package src.network;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.net.InetSocketAddress;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -7,15 +10,17 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.HashMap;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.net.UnknownHostException;
 
 import static src.utils.Utils.*;
 
-import src.helper.UpdateFingersThread;
+import src.helper.FixFingersThread;
 import src.helper.HelperThread;
 import src.helper.PredecessorThread;
+import src.helper.StabilizeThread;
 import  src.utils.MessageType;
 
 public class ChordNode implements RMI {
@@ -24,14 +29,13 @@ public class ChordNode implements RMI {
     private Key local_key;
     private InetSocketAddress local_address;
     private InetSocketAddress predecessor;
-    private InetSocketAddress join_addr;
-    private HashMap<Integer, InetSocketAddress> finger_table;
+    public HashMap<Integer, InetSocketAddress> finger_table;
     private ExecutorService executor;
     private String last_response;
 
-    private HelperThread checkFingers;
+    private StabilizeThread stabilize_thread;
+    private FixFingersThread fixFingers_thread;
     private PredecessorThread predecessor_thread;
-
 
     public ChordNode(InetSocketAddress local_address){
         // initialize local address
@@ -44,15 +48,16 @@ public class ChordNode implements RMI {
         // initialize finger table
         finger_table = new HashMap<Integer, InetSocketAddress>();
         for (int i = 1; i <= KEY_SIZE; i++) {
-            update_ith_finger(i, local_address);
+            update_ith_finger(i, null);
         }
 
         // initialize predecessor
         predecessor = null;
 
-        //TODO initialize helper threads
+        // initialize helper threads
         executor = Executors.newFixedThreadPool(250);
-        checkFingers = new UpdateFingersThread(this, 1000);
+        stabilize_thread = new StabilizeThread(this, 3000);
+        fixFingers_thread = new FixFingersThread(this, 3000);
         predecessor_thread = new PredecessorThread(this);
         
 
@@ -120,6 +125,10 @@ public class ChordNode implements RMI {
         this.predecessor = predecessor;
     }
 
+    public InetSocketAddress get_successor() {
+        return finger_table.get(1);
+    }
+
     public ExecutorService get_executor() {
         return this.executor;
     }
@@ -153,15 +162,20 @@ public class ChordNode implements RMI {
     /* Chord related methods */
 
     public void update_ith_finger(int key, InetSocketAddress value) {
-        finger_table.put(key, value);
+        //join circle recently
+        if(get_successor() == null && key == -1)
+            finger_table.put(1, value);
+        else
+            finger_table.put(key, value);
 
-        if (key == 1 && value != null && !value.equals(local_address)) {
+        // EDU
+        /*if (key == 1 && value != null && !value.equals(local_address)) {
             
             //this is probably wrong, dont really know what I should be doing here >:(
             Message msg = new Message(MessageType.PREDECESSOR, get_address());
             MessageSender msg_sender = new MessageSender(this, value, msg);
             executor.execute(msg_sender);
-        }
+        }*/
     }
 
     public void update_successor(InetSocketAddress value) {
@@ -169,106 +183,80 @@ public class ChordNode implements RMI {
     }
 
     public boolean join(InetSocketAddress contact) {
+
         if (contact == null) {
             System.err.println("Contact cannot be null.\nJoin failed");
             return false;
         }
-        InetSocketAddress successor;
         if (contact.equals(local_address)) {
             // circle is being created
-            successor = local_address;
+            update_successor(local_address);
+
         } else {
             // node is joining an existing circle
             Message msg = new Message(MessageType.JOIN, get_address());
             MessageSender msg_sender = new MessageSender(this, contact, msg);
             executor.execute(msg_sender); 
-            successor = null;
-        }
-        update_successor(successor);
 
-        // TODO start helper threads
-        this.checkFingers.start();
-        this.predecessor_thread.start();
+            // this_successor := contact_node.find_successor(this) -> send message 
+            Key key = Key.create_key_from_address(local_address);
+            System.out.println("Message sent: find successor of key  " + key + " in " + contact);
+            Message msg2 = new Message(MessageType.FIND_SUCCESSOR_KEY, get_address());
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            ObjectOutputStream out = null;
+            byte[] keyBytes = null;
+            try {
+                out = new ObjectOutputStream(bos);   
+                out.writeObject((int) key.key);
+                out.flush();
+                keyBytes = bos.toByteArray();
+            } catch (IOException e) {
+                e.printStackTrace();
+                // ignore exception
+            } finally {
+                try {
+                    bos.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    // ignore close exception
+                }
+            }
+			msg2.set_body(keyBytes);
+            MessageSender msg_sender2 = new MessageSender(this, contact, msg2);
+            executor.execute(msg_sender2); 
+        }
+
+        // start helper threads
+        stabilize_thread.start();
+        fixFingers_thread.start();
+        predecessor_thread.start();
 
         System.out.println("Joined circle successfully!");
         return true;
     }
-
-    public boolean betweenKeys(long key0, long key, long key1) {
-        // if key is between the two keys in the ring: ... key0 -> key -> key1 ...
-        if ((key0 < key && key <= key1) || ((key0 > key1) && (key0 < key || key <= key1))){
-            return true;
-        }
-        return false;
-    } 
-
-    //TODO: ainda não recebe as respostas
-    public InetSocketAddress getSuccessor(long key) {
-
-        InetSocketAddress successor_addr = null;
-
-        // If node joined recently in the circle and has no info, ask predecessor(join_addr)
-        if(finger_table.get(1) == null){
-            System.out.println("Sending message to " + join_addr + " to search key " + key );
-            Message msg = new Message(MessageType.SEARCH_SUCCESSOR_KEY, get_address());
-            msg.set_body(("" + key).getBytes());
-            MessageSender msg_sender = new MessageSender(this, join_addr, msg);
-            executor.execute(msg_sender); 
-
-            return null;
-        }
-   
-        // Search in Finger Table who has the key 
-        for (Entry<Integer, InetSocketAddress> i : finger_table.entrySet()) {
-            if (i.getValue() != null){
-                successor_addr = i.getValue();
-                // If key is between the two nodes
-                //long successor_i_key = (long) ((local_key.key + Math.pow(2, i.getKey() - 1)) % Math.pow(2, KEY_SIZE));
-                Key successor_i = Key.create_key_from_address(successor_addr);
-                if(betweenKeys(this.local_key.key, key, successor_i.key )){
-                    return successor_addr;
-                }
-            }
-        }
-
-        // Only one node in the ring
-        if(successor_addr == local_address){
-            return local_address;
-        }
-        // Send search for key to the largest successor/finger entry
-        else if(successor_addr != null){
-            System.out.println("Sending message to " + successor_addr + " to search key " + key );
-            Message msg = new Message(MessageType.SEARCH_SUCCESSOR_KEY, get_address());
-            msg.set_body(("" + key).getBytes());
-            MessageSender msg_sender = new MessageSender(this, successor_addr, msg);
-            executor.execute(msg_sender); 
-
-        }else
-            System.err.println("No nodes to shearch successor key!!");
-
-        return null;
-    }
-
-	public void updateJoinFingers(InetSocketAddress new_addr) {
-        Key new_key = Key.create_key_from_address(new_addr);
-
-        for (int i = 1; i <= KEY_SIZE; i++) {
-            long i_key = (long) ((local_key.key + Math.pow(2, i - 1)) % Math.pow(2, KEY_SIZE));
-            if(betweenKeys(this.local_key.key, new_key.key, i_key )){
-                update_ith_finger(i, new_addr);
-            }
-        }
-    }
-
-	public void startJoinFingers(InetSocketAddress new_addr){
-        join_addr = new_addr;
-    }
     
-    //Notifica o succesor que é o predecessor. Ao receber a mensagem o node já atualiza o seu predecessor (linha 50 - MessageReceiver.java)
-    //TO DO : onde chamo isto? construção da finger table/calculo do sucessor tem de estar pronto antes disto ser chamado
-    public boolean notify(InetSocketAddress successor) {
+    /****************************** STABILIZE THREAD *******************************/
+    
+    /**
+     * possible_predecessor thinks it might be your predecessor.
+     */ 
+    public void notify(InetSocketAddress possible_predecessor) {
 
-        if (successor.equals(this.get_local_address())) {
+        //if predecessor is null or ...
+        if(get_predecessor() == null){
+            predecessor = possible_predecessor;
+            return;
+        }
+        // ... possible_predecessor ∈ (predecessor, n) then
+        Key predecessor_key = Key.create_key_from_address(get_predecessor());
+        Key possible_predecessor_key = Key.create_key_from_address(possible_predecessor);
+        if(betweenKeys(predecessor_key.key, possible_predecessor_key.key, local_key.key)){
+            predecessor = possible_predecessor;
+            return;
+        }
+
+        // EDU
+        /*if (possible_predecessor.equals(this.get_local_address())) {
             System.out.println("successor is self :/");
             return false;
         }
@@ -276,8 +264,81 @@ public class ChordNode implements RMI {
         Message msg = new Message(MessageType.PREDECESSOR, get_address());
         MessageSender msg_sender = new MessageSender(this, successor, msg);
         executor.execute(msg_sender);
+       
         return true;
-        
+        */
+    }
+
+    /****************************** FIX FINGERS THREAD ******************************/
+
+    public boolean betweenKeys(long key0, long key, long key1) {
+        // if key is between the two keys in the ring: ... key0 -> key -> key1 ...
+        if ((key0 < key && key <= key1) || ((key0 >= key1) && (key0 < key || key <= key1))){
+            return true;
+        }
+        return false;
+    } 
+
+    /**
+     * ask this node to find the successor of key
+     */
+	public InetSocketAddress find_successor_addr(int key) {
+
+        Key successor_key = Key.create_key_from_address(get_successor());
+
+        //if key ∈ ]this_node_key, successor_key] then
+        if(betweenKeys(this.local_key.key, key, successor_key.key ))
+            return get_successor();
+
+        // forward the query around the circle
+        else{
+            InetSocketAddress n0_addr = closest_preceding_node_addr(key);
+            if(n0_addr == local_address)
+                return local_address;
+
+            //return n0_addr.find_successor(key) -> send message 
+            System.out.println("Message sent: find successor of key  " + key + " in " + n0_addr);
+            Message msg = new Message(MessageType.FIND_SUCCESSOR_KEY, get_address());
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            ObjectOutputStream out = null;
+            byte[] keyBytes = null;
+            try {
+                out = new ObjectOutputStream(bos);   
+                out.writeObject(key);
+                out.flush();
+                keyBytes = bos.toByteArray();
+            } catch (IOException e) {
+                // ignore exception
+            } finally {
+                try {
+                    bos.close();
+                } catch (IOException ex) {
+                    // ignore close exception
+                }
+            }
+			msg.set_body(keyBytes);
+            MessageSender msg_sender = new MessageSender(this, n0_addr, msg);
+            executor.execute(msg_sender); 
+        }
+
+        return null;
+	}
+
+    /**
+     * search the local table for the highest predecessor of key
+     */
+    private InetSocketAddress closest_preceding_node_addr(int key) {
+
+        for (int i = 1; i <= KEY_SIZE; i++) {
+            if(finger_table.get(i) != null){
+                Key finger_i_key = Key.create_key_from_address(finger_table.get(i));
+            
+                //if finger[i] ∈ ]this_node_key, key] then
+                if(betweenKeys(this.local_key.key, finger_i_key.key, key))
+                    return finger_table.get(i);
+            }
+        }
+        return local_address;
     }
 }
 

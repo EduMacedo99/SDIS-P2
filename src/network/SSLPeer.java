@@ -72,7 +72,7 @@ public abstract class SSLPeer {
                         peer_net_data = handle_buffer_underflow(engine, peer_net_data);
                         break;
                     case CLOSED:
-                        System.out.println("Client requested to close the connection...");
+                        //System.out.println("Client requested to close the connection...");
                         close_connection(socket_channel, engine);
                         return null;
                     default:
@@ -90,7 +90,7 @@ public abstract class SSLPeer {
 
     protected boolean do_handshake(SocketChannel socketChannel, SSLEngine engine) throws IOException {
 
-        System.out.println("Beggining handshake...");
+        //System.out.println("Beggining handshake...");
 
         SSLEngineResult result;
         HandshakeStatus handshake_status;
@@ -224,7 +224,7 @@ public abstract class SSLPeer {
         engine.closeOutbound();
         do_handshake(socket_channel, engine);
         socket_channel.close();
-        System.out.println("Connection closed!");
+        //System.out.println("Connection closed!");
     }
 
     protected void handle_end_of_stream(SocketChannel socketChannel, SSLEngine engine) throws IOException  {

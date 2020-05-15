@@ -1,5 +1,11 @@
 package src.network;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
@@ -14,6 +20,16 @@ public class MessageReceiver implements Runnable {
     private ChordNode peer;
     private InetSocketAddress ip_sender;
     private String string_msg;
+
+    private Message msg = null;
+    private MessageSender msg_sender = null;
+    private InetSocketAddress addr_response;
+    private int key_response;
+    private ByteArrayOutputStream bos;
+    private ByteArrayInputStream bis;
+    private ObjectOutputStream out;
+    private ObjectInput in;
+    private byte[] bytes;
 
     public MessageReceiver(ByteBuffer msg, ChordNode peer){
         this.peer = peer;
@@ -40,41 +56,182 @@ public class MessageReceiver implements Runnable {
         peer.set_last_response(string_msg);
         switch(type) {
             case MessageType.JOIN:
-                Message msg = new Message(MessageType.OK , peer.get_address());
-                MessageSender msg_sender = new MessageSender(peer, ip_sender, msg);
+                msg = new Message(MessageType.OK , peer.get_address());
+                msg_sender = new MessageSender(peer, ip_sender, msg);
                 peer.get_executor().execute(msg_sender); 
-                peer.updateJoinFingers(ip_sender);
-                break;
-            case MessageType.PREDECESSOR:
-                System.out.println("Predecessor message received successfully!");
-                peer.set_predecessor(ip_sender);
-                System.out.println(ip_sender);
-                break;
-            case MessageType.REQUEST_KEY:
-                System.out.println("Message requesting key received");
-                Message msg_key = new Message(MessageType.SENDING_KEY + peer.get_local_key().toString(), peer.get_address());
-                MessageSender msg_key_sender = new MessageSender(peer, ip_sender, msg_key);
-                peer.get_executor().execute(msg_key_sender);
-                break;
-            case MessageType.OK:
-                System.out.println("Response message received successfully!");
-                peer.startJoinFingers(ip_sender);
                 break;
 
-            case MessageType.SEARCH_SUCCESSOR_KEY:
-                System.out.println("Message: search who has the key, received successfully!");
-               /* Message msg2 = new Message(MessageType.FOUND_SUCCESSOR_KEY , peer.get_address());
-                long key = (long)body[0];
-                InetSocketAddress response = peer.getSuccessor(key);
-                msg2.set_body((response.toString() + key).getBytes());
-                MessageSender msg_sender2 = new MessageSender(peer, ip_sender, msg2);
-                peer.get_executor().execute(msg_sender2); */
+            case MessageType.OK:
+                System.out.println("Response message received successfully!");
+                break;
+            
+            // EDU
+            /*case MessageType.PREDECESSOR:
+                System.out.println("Predecessor message received successfully!");
+                //peer.set_predecessor(ip_sender);
+                System.out.println(ip_sender);
+                break;
+            */
+            
+            case MessageType.GET_PREDECESSOR:
+                System.out.println("Message received: send your predecessor to " + ip_sender);
+                msg = new Message(MessageType.RECEIVED_PREDECESSOR , peer.get_address());
+                addr_response = peer.get_predecessor();
+                bos = new ByteArrayOutputStream();
+                out = null;
+                bytes = null;
+                try {
+                    out = new ObjectOutputStream(bos);   
+                    out.writeObject(addr_response);
+                    out.flush();
+                    bytes = bos.toByteArray();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    // ignore exception
+                } finally {
+                    try {
+                        bos.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        // ignore close exception
+                    }
+                }
+                msg.set_body(bytes);
+                msg_sender = new MessageSender(peer, ip_sender, msg);
+                peer.get_executor().execute(msg_sender);
+                break;
+                
+            case MessageType.RECEIVED_PREDECESSOR:
+                bis = new ByteArrayInputStream(body);
+                in = null;
+                addr_response = null;
+                try {
+                in = new ObjectInputStream(bis);
+                addr_response = (InetSocketAddress) in.readObject();
+                } catch (ClassNotFoundException | IOException e) {
+                    // ignore exception
+                    } finally {
+                        try {
+                            if (in != null) {
+                            in.close();
+                            }
+                        } catch (IOException ex) {
+                        // ignore close exception
+                    }
+                }
+                System.out.println("Message received: received predecessor " + addr_response + " of " + ip_sender);
+                InetSocketAddress successor = peer.get_successor();
+                // decides wether p should be n‘s successor instead (this is the case if p recently joined the system).
+                Key predeccessor_key;
+                Key successor_key;
+                if(addr_response != null){
+                    predeccessor_key = Key.create_key_from_address(addr_response);
+                    successor_key = Key.create_key_from_address(successor);
+                    // if predeccessor ∈ (n, successor) then
+                    if(peer.betweenKeys(peer.get_local_key().key, predeccessor_key.key, successor_key.key)){
+                        peer.update_ith_finger(1, addr_response);
+                        successor = addr_response;
+                    }
+                }
+                // successor.notify(n)
+                Message msg = new Message(MessageType.NOTIFY_IM_PREDECESSOR, peer.get_address());
+                MessageSender msg_sender = new MessageSender(peer, successor, msg);
+                peer.get_executor().execute(msg_sender);
+                break;
+
+            case MessageType.NOTIFY_IM_PREDECESSOR:
+                System.out.println("Message received: " + ip_sender + " said it is my predecessor");
+                peer.notify(ip_sender);
+                break;
+
+            case MessageType.REQUEST_KEY:
+                System.out.println("Message received: asking if i am alive");
+                msg = new Message(MessageType.SENDING_KEY, peer.get_address());
+                msg_sender = new MessageSender(peer, ip_sender, msg);
+                peer.get_executor().execute(msg_sender);
+                break;
+            
+            case MessageType.SENDING_KEY:
+                System.out.println("Message received: your predecessor is still alive");
+                break;
+
+            case MessageType.FIND_SUCCESSOR_KEY:
+                bis = new ByteArrayInputStream(body);
+                in = null;
+                key_response = -1;
+                try {
+                in = new ObjectInputStream(bis);
+                key_response = (int) in.readObject();
+                } catch (ClassNotFoundException | IOException e) {
+                    // ignore exception
+                } finally {
+                    try {
+                        if (in != null) {
+                        in.close();
+                        }
+                    } catch (IOException ex) {
+                        // ignore close exception
+                    }
+                }
+                System.out.println("Message received: find successor of key " + key_response);
+                msg = new Message(MessageType.FOUND_SUCCESSOR_KEY, peer.get_address());
+                addr_response = peer.find_successor_addr(key_response);
+                bos = new ByteArrayOutputStream();
+                out = null;
+                bytes = null;
+                try {
+                    out = new ObjectOutputStream(bos);   
+                    out.writeObject(addr_response);
+                    out.writeObject(key_response);
+                    out.flush();
+                    bytes = bos.toByteArray();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    // ignore exception
+                } finally {
+                    try {
+                        bos.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        // ignore close exception
+                    }
+                }
+                msg.set_body(bytes);
+                msg_sender = new MessageSender(peer, ip_sender, msg);
+                peer.get_executor().execute(msg_sender);
                 break;
             
             case MessageType.FOUND_SUCCESSOR_KEY:
-                System.out.println("Message: found who has the key, received successfully!");
-               /* System.out.println("--- " + body.toString());
-                //peer.update_ith_finger(key, value);*/
+                bis = new ByteArrayInputStream(body);
+                in = null;
+                addr_response = null;
+                key_response = -1;
+                try {
+                in = new ObjectInputStream(bis);
+                addr_response = (InetSocketAddress) in.readObject();
+                key_response = (int) in.readObject();
+                } catch (ClassNotFoundException | IOException e) {
+                    // ignore exception
+                    } finally {
+                        try {
+                            if (in != null) {
+                            in.close();
+                            }
+                        } catch (IOException ex) {
+                        // ignore close exception
+                    }
+                }
+                System.out.println("Message received: key " + key_response + " was found in " + addr_response );
+                for (int i = 1; i <= KEY_SIZE; i++) {
+                    int key = (int) ((int) (peer.get_local_key().key + Math.pow(2, i - 1)) % Math.pow(2, KEY_SIZE));
+                    if(key_response == key){
+                        // TODO: ele chega aqui, mas não atualiza a tabela não sei pq :(
+                        peer.update_ith_finger(i, addr_response);
+                        return;
+                    }
+                }
+                //join circle recently
+                peer.update_ith_finger(-1, addr_response);
                 break;
         }
     }

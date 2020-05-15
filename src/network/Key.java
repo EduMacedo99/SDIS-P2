@@ -1,10 +1,11 @@
 package src.network;
 
+import java.io.Serializable;
 import java.net.InetSocketAddress;
 
 import static src.utils.Utils.*;
 
-public class Key {
+public class Key implements Serializable{
 
     public static final int MAXIMUM_KEY_SIZE = (int) Math.pow(2, KEY_SIZE);
 
