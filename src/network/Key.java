@@ -12,7 +12,7 @@ public class Key implements Serializable{
     public long key;
 
     public Key(int key) {
-        this.key = key & 0x00000000ffffffffL;
+        this.key = key & 0x000000000000001fL;
         this.key = this.key % MAXIMUM_KEY_SIZE;
     }
 

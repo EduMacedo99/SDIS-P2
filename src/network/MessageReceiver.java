@@ -198,6 +198,7 @@ public class MessageReceiver implements Runnable {
                 }
                 msg.set_body(bytes);
                 msg_sender = new MessageSender(peer, ip_sender, msg);
+                System.out.println("Message sent: i found the key " + key_response + " in " + addr_response );
                 peer.get_executor().execute(msg_sender);
                 break;
             
@@ -225,7 +226,7 @@ public class MessageReceiver implements Runnable {
                 for (int i = 1; i <= KEY_SIZE; i++) {
                     int key = (int) ((int) (peer.get_local_key().key + Math.pow(2, i - 1)) % Math.pow(2, KEY_SIZE));
                     if(key_response == key){
-                        // TODO: ele chega aqui, mas não atualiza a tabela não sei pq :(
+                        // TODO: ele as vezes chega aqui, mas não atualiza a tabela não sei pq :/
                         peer.update_ith_finger(i, addr_response);
                         return;
                     }

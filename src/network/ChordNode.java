@@ -9,16 +9,12 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.HashMap;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.net.UnknownHostException;
 
 import static src.utils.Utils.*;
 
 import src.helper.FixFingersThread;
-import src.helper.HelperThread;
 import src.helper.PredecessorThread;
 import src.helper.StabilizeThread;
 import  src.utils.MessageType;
