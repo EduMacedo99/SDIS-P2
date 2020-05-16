@@ -8,6 +8,7 @@ import java.security.SecureRandom;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLSession;
 
 public class SSLClient extends SSLPeer {
@@ -35,7 +36,7 @@ public class SSLClient extends SSLPeer {
     }
 
     public void connect() throws Exception {
-        System.out.println("Requesting connection...");
+        //System.out.println("Requesting connection...");
     	socket_channel = SocketChannel.open();
     	socket_channel.configureBlocking(false);
     	socket_channel.connect(new InetSocketAddress(remote_address, port));
@@ -44,7 +45,7 @@ public class SSLClient extends SSLPeer {
 
         engine.beginHandshake();
         if (do_handshake(socket_channel, engine)) {
-            System.out.println("Connection established!");
+            //System.out.println("Connection established!");
         } else {
             socket_channel.close();
             System.err.println("Connection closed due to handshake failure.");
@@ -59,8 +60,43 @@ public class SSLClient extends SSLPeer {
         write(socket_channel, engine, message);
     }
 
+    protected ByteBuffer read(SocketChannel socket_channel, SSLEngine engine) throws Exception {
+        peer_net_data.clear();
+        int bytesRead = socket_channel.read(peer_net_data);
+        if (bytesRead > 0) {
+            peer_net_data.flip();
+            while (peer_net_data.hasRemaining()) {
+                peer_app_data.clear();
+                SSLEngineResult result = engine.unwrap(peer_net_data, peer_app_data);
+                switch (result.getStatus()) {
+                    case OK:
+                        peer_app_data.flip();
+                        return peer_app_data;
+                    case BUFFER_OVERFLOW:
+                        peer_app_data = handle_overflow_application(engine, peer_app_data);
+                        break;
+                    case BUFFER_UNDERFLOW:
+                        peer_net_data = handle_buffer_underflow(engine, peer_net_data);
+                        break;
+                    case CLOSED:
+                        System.out.println("Client requested to close the connection...");
+                        close_connection(socket_channel, engine);
+                        return null;
+                    default:
+                        throw new IllegalStateException("Invalid SSL status: " + result.getStatus());
+                }
+            }
+
+        } else if (bytesRead < 0) {
+            System.err.println("Received end of stream. Will try to close connection with client...");
+            handle_end_of_stream(socket_channel, engine);
+        }
+
+        return null;
+    }
+
     public void shutdown() throws IOException {
-        System.out.println("Requesting to close connection with the server...");
+        //System.out.println("Requesting to close connection with the server...");
         close_connection(socket_channel, engine);
         executor.shutdown();
     }

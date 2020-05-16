@@ -12,6 +12,7 @@ import java.util.Iterator;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLSession;
 
 public class SSLServer extends SSLPeer {
@@ -69,6 +70,41 @@ public class SSLServer extends SSLPeer {
         System.out.println("Server closed!");
     }
 
+    protected void read(SocketChannel socket_channel, SSLEngine engine) throws Exception {
+        
+        peer_net_data.clear();
+        int bytesRead = socket_channel.read(peer_net_data);
+        if (bytesRead > 0) {
+            peer_net_data.flip();
+            while (peer_net_data.hasRemaining()) {
+                peer_app_data.clear();
+                SSLEngineResult result = engine.unwrap(peer_net_data, peer_app_data);
+                switch (result.getStatus()) {
+                    case OK:
+                        peer_app_data.flip();
+                        peer.get_executor().execute(new MessageReceiver(peer_app_data, peer, socket_channel, engine ));
+                        break;
+                    case BUFFER_OVERFLOW:
+                        peer_app_data = handle_overflow_application(engine, peer_app_data);
+                        break;
+                    case BUFFER_UNDERFLOW:
+                        peer_net_data = handle_buffer_underflow(engine, peer_net_data);
+                        break;
+                    case CLOSED:
+                        //System.out.println("Client requested to close the connection...");
+                        close_connection(socket_channel, engine);
+                        return;
+                    default:
+                        throw new IllegalStateException("Invalid SSL status: " + result.getStatus());
+                }
+            }
+
+        } else if (bytesRead < 0) {
+            System.err.println("Received end of stream. Will try to close connection with client...");
+            handle_end_of_stream(socket_channel, engine);
+        }
+    }
+
     public void stop() {
         System.out.println("Will now close server...");
         active = false;
@@ -78,7 +114,7 @@ public class SSLServer extends SSLPeer {
 
     private void accept(SelectionKey key) throws Exception {
 
-        System.out.println("New connection request!");
+        //System.out.println("New connection request!");
 
         SocketChannel socketChannel = ((ServerSocketChannel) key.channel()).accept();
         socketChannel.configureBlocking(false);
@@ -88,7 +124,7 @@ public class SSLServer extends SSLPeer {
         engine.beginHandshake();
 
         if (do_handshake(socketChannel, engine)) {
-            System.out.println("Connection established!");
+            //System.out.println("Connection established!");
             socketChannel.register(selector, SelectionKey.OP_READ, engine);
         } else {
             socketChannel.close();

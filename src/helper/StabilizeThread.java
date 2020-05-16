@@ -41,9 +41,11 @@ public class StabilizeThread extends HelperThread{
 
         Message msg = new Message(MessageType.GET_PREDECESSOR, node.get_address());
         
-        byte[] a = requestMessage(node,  successor, 100, msg);
+        Message response = requestMessage(node,  successor, 100, msg);
 
+        if (response == null) return;
 
+        System.out.println("Stabilize Thread: Message received: " + response.get_header());
 
 
        /* while(node.get_last_response() == null || !node.get_last_response().contains("NOTIFY_IM_PREDECESSOR")){}

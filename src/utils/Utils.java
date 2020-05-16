@@ -2,8 +2,11 @@ package src.utils;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+
+import javax.net.ssl.SSLEngine;
 
 import src.network.ChordNode;
 import src.network.Message;
@@ -41,7 +44,7 @@ public class Utils {
         return trimmed;
     }
 
-    public static byte[] requestMessage(ChordNode node, InetSocketAddress destination, int time, Message msg) {
+    public static Message requestMessage(ChordNode node, InetSocketAddress destination, int time, Message msg) {
 
         ByteBuffer response = null;
 
@@ -60,11 +63,16 @@ public class Utils {
             e.printStackTrace();
         }
 
-        if(response != null)
-            return response.array();
-        
-        return null;
+        return Message.build_msg_from_byte_buffer(response);
+    }
 
+    public static void send_response(ChordNode peer, Message msg, SocketChannel socket_channel, SSLEngine engine) {
+        try {
+            SSLClient client = new SSLClient(peer, null, 0);
+            client.write(socket_channel, engine, msg.get_bytes());
+        } catch (Exception e1) {
+            e1.printStackTrace();
+        }
     }
 
 }

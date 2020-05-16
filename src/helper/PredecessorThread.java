@@ -38,8 +38,7 @@ public class PredecessorThread extends HelperThread{
         // checks if predecessor still lives
         // TODO: apanhar o erro de envio de mensagem caso não esteja vivo
         Message msg = new Message(MessageType.REQUEST_KEY, chordNode.get_address());
-        byte[] a = requestMessage(chordNode,  predecessor, 100, msg);
-        System.out.println("PREDECESSOR ALIVE: " + new String(a) );
+        requestMessage(chordNode,  predecessor, 100, msg);
 
 
         //while(chordNode.get_last_response() == null || !chordNode.get_last_response().contains("SENDING_KEY")){}

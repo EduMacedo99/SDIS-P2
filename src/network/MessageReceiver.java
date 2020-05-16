@@ -66,7 +66,7 @@ public class MessageReceiver implements Runnable {
         switch (type) {
             case MessageType.JOIN:
                 msg = new Message(MessageType.OK, peer.get_address());
-                byte[] a = requestMessage(peer, ip_sender, 100, msg);
+                requestMessage(peer, ip_sender, 100, msg);
 
                 break;
 
@@ -86,14 +86,14 @@ public class MessageReceiver implements Runnable {
                 msg = new Message(MessageType.RECEIVED_PREDECESSOR, peer.get_address());
                 addr_response = peer.get_predecessor();
                 bos = new ByteArrayOutputStream();
-                out = null;
-                bytes = null;
+                //out = null;
+                //bytes = null;
                 try {
-                    out = new ObjectOutputStream(bos);
-                    out.writeObject(addr_response);
-                    out.flush();
-                    bytes = bos.toByteArray();
-                } catch (IOException e) {
+                    //out = new ObjectOutputStream(bos);
+                    //out.writeObject(addr_response);
+                    //out.flush();
+                    //bytes = bos.toByteArray();
+                } catch (Exception e) {
                     e.printStackTrace();
                     // ignore exception
                 } finally {
@@ -106,17 +106,9 @@ public class MessageReceiver implements Runnable {
                 }
                 msg.set_body(bytes);
 
-                try {
-                    SSLClient client2 = new SSLClient(peer, null, 0);
-                    client2.write(socket_channel, engine, bytes);
-                } catch (Exception e1) {
-                    e1.printStackTrace();
-                }
-
-                //byte[] a7 = requestMessage(peer,  ip_sender, 100, msg);
-        
+                Message msg2 = new Message("RESPONSE", "192.2.2.2:8007");
+                send_response(peer, msg2, socket_channel, engine);
                 break;
-                
             case MessageType.RECEIVED_PREDECESSOR:
                 bis = new ByteArrayInputStream(body);
                 in = null;
@@ -151,7 +143,7 @@ public class MessageReceiver implements Runnable {
                 }
                 // successor.notify(n)
                 Message msg = new Message(MessageType.NOTIFY_IM_PREDECESSOR, peer.get_address());
-                byte[] a8 = requestMessage(peer,  successor, 100, msg);
+                requestMessage(peer,  successor, 100, msg);
                 
                 break;
 
@@ -163,7 +155,7 @@ public class MessageReceiver implements Runnable {
             case MessageType.REQUEST_KEY:
                 System.out.println("Message received: asking if i am alive");
                 msg = new Message(MessageType.SENDING_KEY, peer.get_address());
-                byte[] a2 = requestMessage(peer,  ip_sender, 100, msg);
+                requestMessage(peer,  ip_sender, 100, msg);
           
                 break;
             
@@ -214,7 +206,7 @@ public class MessageReceiver implements Runnable {
                 }
                 msg.set_body(bytes);
                 System.out.println("Message sent: i found the key " + key_response + " in " + addr_response );
-                byte[] a3 = requestMessage(peer,  ip_sender, 100, msg);
+                requestMessage(peer,  ip_sender, 100, msg);
                
                 break;
             
