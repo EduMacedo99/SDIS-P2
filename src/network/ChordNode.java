@@ -190,9 +190,6 @@ public class ChordNode implements RMI {
 
         } else {
             // node is joining an existing circle
-            Message msg = new Message(MessageType.JOIN, get_address());
-            requestMessage(this,  contact, 100, msg);
-    
 
             // this_successor := contact_node.find_successor(this) -> send message 
             Key key = Key.create_key_from_address(local_address);
@@ -218,13 +215,13 @@ public class ChordNode implements RMI {
                 }
             }
 			msg2.set_body(keyBytes);
-            requestMessage(this,  contact, 100, msg2);
-            
+            Message response = requestMessage(this,  contact, 100, msg2);
+            System.out.println("Found successor: " + response.get_header().split(" ")[1]);
 
         }
 
         // start helper threads
-        stabilize_thread.start();
+        //stabilize_thread.start();
         //fixFingers_thread.start();
         //predecessor_thread.start();
 

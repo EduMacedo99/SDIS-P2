@@ -63,13 +63,8 @@ public class MessageReceiver implements Runnable {
     @Override
     public void run() {
         peer.set_last_response(string_msg);
+        Message response;
         switch (type) {
-            case MessageType.JOIN:
-                msg = new Message(MessageType.OK, peer.get_address());
-                requestMessage(peer, ip_sender, 100, msg);
-
-                break;
-
             case MessageType.OK:
                 System.out.println("Response message received successfully!");
                 break;
@@ -164,7 +159,7 @@ public class MessageReceiver implements Runnable {
                 break;
 
             case MessageType.FIND_SUCCESSOR_KEY:
-                bis = new ByteArrayInputStream(body);
+                /*bis = new ByteArrayInputStream(body);
                 in = null;
                 key_response = -1;
                 try {
@@ -206,8 +201,10 @@ public class MessageReceiver implements Runnable {
                 }
                 msg.set_body(bytes);
                 System.out.println("Message sent: i found the key " + key_response + " in " + addr_response );
-                requestMessage(peer,  ip_sender, 100, msg);
-               
+                requestMessage(peer,  ip_sender, 100, msg);*/
+                System.out.println("Message received: Peer " + ip_sender + " asked for its successor!");
+                response = new Message("FOUND_KEY", peer.get_address());
+                send_response(peer, response, socket_channel, engine);
                 break;
             
             case MessageType.FOUND_SUCCESSOR_KEY:
