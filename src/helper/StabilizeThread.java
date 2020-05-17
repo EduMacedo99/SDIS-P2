@@ -1,6 +1,7 @@
 package src.helper;
 
 import src.network.ChordNode;
+import src.network.Key;
 import src.network.Message;
 import src.network.MessageSender;
 import src.network.SSLClient;
@@ -21,8 +22,6 @@ public class StabilizeThread extends HelperThread{
     private ChordNode node;
     private ExecutorService executor;
 
-
-
     public StabilizeThread(ChordNode node, int time_interval) {
         super(time_interval);
         this.node = node;
@@ -35,36 +34,28 @@ public class StabilizeThread extends HelperThread{
         if(node.get_successor() == null )
            return;
 
-        // asks its successor for its predecessor p
         InetSocketAddress successor = node.get_successor();
 
 
         Message msg = new Message(MessageType.GET_PREDECESSOR, node.get_address());
         
-        Message response = requestMessage(node,  successor, 100, msg);
+        Message response = requestMessage(node, successor, 100, msg);
 
-        if (response == null) return;
+        String candidate_str = new String(response.get_body());
 
-        System.out.println("Stabilize Thread: Message received: " + response.get_header());
+        if (candidate_str.equals("null")) return;
 
+        String candidate_address = candidate_str.split(":")[0];
+        int candidate_port = Integer.parseInt(candidate_str.split(":")[1]);
 
-       /* while(node.get_last_response() == null || !node.get_last_response().contains("NOTIFY_IM_PREDECESSOR")){}
-        System.out.println("SAIU NOTIFY_IM_PREDECESSOR RECEBIDO ");
+        InetSocketAddress candidate = new InetSocketAddress(candidate_address, candidate_port);
 
-        String response = node.get_last_response();
+        Key successor_key = Key.create_key_from_address(successor);
+        Key candidate_key = Key.create_key_from_address(candidate);
 
-        String[] pieces = response.split(CRLF);
-        String header = pieces[0];
-        //String type = header.split(" ")[0];
-
-        String ip_sender_str = header.split(" ")[1];
-        String ip = ip_sender_str.split(":")[0];
-        int port = Integer.parseInt(ip_sender_str.split(":")[1]);
-        InetSocketAddress ip_sender = new InetSocketAddress(ip, port);
-
-        node.notify(ip_sender);*/
-
-        
+        if (node.betweenKeys(node.get_local_key().key, candidate_key.key, successor_key.key) || node.get_local_address().equals(successor)) {
+            node.update_successor(candidate);
+        }
        
     }
 

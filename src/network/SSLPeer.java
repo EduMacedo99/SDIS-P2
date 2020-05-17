@@ -24,7 +24,6 @@ public abstract class SSLPeer {
     }
 
     public void write(SocketChannel socket_channel, SSLEngine engine, byte[] message) throws Exception {
-        System.out.println("Message: " + new String(message));
         my_app_data.clear();
         my_app_data.put(message);
         my_app_data.flip();
@@ -35,7 +34,6 @@ public abstract class SSLPeer {
                 case OK:
                 my_net_data.flip();
                 while (my_net_data.hasRemaining()) {
-                    
                     socket_channel.write(my_net_data);
                 }
                 break;

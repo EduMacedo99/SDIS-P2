@@ -12,14 +12,24 @@ public class Message {
         this.header = header;
         this.body = body;
     }
+
+    public Message(String type) {
+        this.header = type + CRLF;
+        this.body = "".getBytes();
+    }
     
     public Message(String type, String sender_address) {
         this.header = type + " " + sender_address + CRLF;
         this.body = "".getBytes();
     }
 
-    public Message(String type, String sender_address, Key key) {
-        this.header = type + " " + sender_address + " " + key + CRLF;
+    public Message(String type, String sender_address, String successor) {
+        this.header = type + " " + sender_address + " " + successor + CRLF;
+        this.body = "".getBytes();
+    }
+
+    public Message(String type, String sender_address, String peer_requesting_address, Key key) {
+        this.header = type + " " + sender_address + " " + peer_requesting_address + " " + key + CRLF;
         this.body = "".getBytes();
     }
 

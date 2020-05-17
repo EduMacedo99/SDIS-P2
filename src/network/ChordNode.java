@@ -16,24 +16,26 @@ import static src.utils.Utils.*;
 
 import src.helper.FixFingersThread;
 import src.helper.PredecessorThread;
+import src.helper.PrintThread;
 import src.helper.StabilizeThread;
 import  src.utils.MessageType;
 
 public class ChordNode implements RMI {
 
-    private ServerRunnable serverRun;
-    private Key local_key;
-    private InetSocketAddress local_address;
+    private final ServerRunnable serverRun;
+    private final Key local_key;
+    private final InetSocketAddress local_address;
     private InetSocketAddress predecessor;
     public HashMap<Integer, InetSocketAddress> finger_table;
-    private ExecutorService executor;
+    private final ExecutorService executor;
     private String last_response;
 
-    private StabilizeThread stabilize_thread;
-    private FixFingersThread fixFingers_thread;
-    private PredecessorThread predecessor_thread;
+    private final StabilizeThread stabilize_thread;
+    private final FixFingersThread fixFingers_thread;
+    private final PredecessorThread predecessor_thread;
+    private final PrintThread print_thread;
 
-    public ChordNode(InetSocketAddress local_address){
+    public ChordNode(final InetSocketAddress local_address){
         // initialize local address
         this.local_address = local_address;
 
@@ -55,45 +57,47 @@ public class ChordNode implements RMI {
         stabilize_thread = new StabilizeThread(this, 3000);
         fixFingers_thread = new FixFingersThread(this, 3000);
         predecessor_thread = new PredecessorThread(this);
-        
+        // provisory
+        print_thread = new PrintThread(this, 3000);
 
+        
         // start server
-        String host_address = local_address.getAddress().getHostAddress();
-        int port = local_address.getPort();
+        final String host_address = local_address.getAddress().getHostAddress();
+        final int port = local_address.getPort();
         serverRun = new ServerRunnable(this, host_address, port);
         executor.execute(serverRun);
     }
 
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         if (args.length != 3 && args.length != 5) {
             System.out.println("Usage: <host_address> <port> <access_point> [<contact_address> <contact_port>]");
             return;
         }
 
-        String host_address = args[0];
-        int port = Integer.parseInt(args[1]);
-        String access_point = args[2];
-        InetSocketAddress local_address = new InetSocketAddress(host_address, port);
+        final String host_address = args[0];
+        final int port = Integer.parseInt(args[1]);
+        final String access_point = args[2];
+        final InetSocketAddress local_address = new InetSocketAddress(host_address, port);
         InetSocketAddress contact = local_address;
         if (args.length == 5) {
-            String contact_address = args[3];
-            int contact_port = Integer.parseInt(args[4]);
+            final String contact_address = args[3];
+            final int contact_port = Integer.parseInt(args[4]);
             contact = new InetSocketAddress(contact_address, contact_port);
         }
 
-        ChordNode node = new ChordNode(local_address);
+        final ChordNode node = new ChordNode(local_address);
 
         try { /* RMI */
-            RMI stub = (RMI) UnicastRemoteObject.exportObject(node, 0);
+            final RMI stub = (RMI) UnicastRemoteObject.exportObject(node, 0);
             Registry registry;
             try {
                 registry = LocateRegistry.createRegistry(1099);
                 registry.bind(access_point, stub);
-            } catch (RemoteException e) {
+            } catch (final RemoteException e) {
                 registry = LocateRegistry.getRegistry();
                 registry.rebind(access_point, stub);
             }
-        } catch (Exception e) {
+        } catch (final Exception e) {
             System.err.println("RMI Exception:");
             e.printStackTrace();
         }
@@ -117,12 +121,16 @@ public class ChordNode implements RMI {
         return predecessor;
     }
 
-    public void set_predecessor(InetSocketAddress predecessor) {
+    public void set_predecessor(final InetSocketAddress predecessor) {
         this.predecessor = predecessor;
     }
 
     public InetSocketAddress get_successor() {
         return finger_table.get(1);
+    }
+
+    public InetSocketAddress get_ith_finger(final int i) {
+        return finger_table.get(i);
     }
 
     public ExecutorService get_executor() {
@@ -133,7 +141,7 @@ public class ChordNode implements RMI {
         return last_response;
     }
 
-    public void set_last_response(String response) {
+    public void set_last_response(final String response) {
         this.last_response = response;
     }
 
@@ -143,42 +151,36 @@ public class ChordNode implements RMI {
 
     /* Service Interface */
 
-    public void backup(String filepath, int replication_degree) {
+    public void backup(final String filepath, final int replication_degree) {
         System.out.println("Backup is being initiated");
     }
 
-    public void restore(String filepath) {
+    public void restore(final String filepath) {
         System.out.println("Restore is being initiated");
     }
 
-    public void delete(String filepath) {
+    public void delete(final String filepath) {
         System.out.println("Delete is being initiated");
     }
 
     /* Chord related methods */
 
-    public void update_ith_finger(int key, InetSocketAddress value) {
+    public void update_ith_finger(final int key, final InetSocketAddress value) {
         //join circle recently
         if(get_successor() == null && key == -1)
             finger_table.put(1, value);
         else
             finger_table.put(key, value);
-
-        // EDU
-        /*if (key == 1 && value != null && !value.equals(local_address)) {
-            
-            //this is probably wrong, dont really know what I should be doing here >:(
-            Message msg = new Message(MessageType.PREDECESSOR, get_address());
-            MessageSender msg_sender = new MessageSender(this, value, msg);
-            executor.execute(msg_sender);
-        }*/
     }
 
-    public void update_successor(InetSocketAddress value) {
+    public void update_successor(final InetSocketAddress value) {
         update_ith_finger(1, value);
+        if (value != null && !value.equals(local_address)) {
+            notify_successor();
+        }
     }
 
-    public boolean join(InetSocketAddress contact) {
+    public boolean join(final InetSocketAddress contact) {
 
         if (contact == null) {
             System.err.println("Contact cannot be null.\nJoin failed");
@@ -187,62 +189,54 @@ public class ChordNode implements RMI {
         if (contact.equals(local_address)) {
             // circle is being created
             update_successor(local_address);
+            start_helper_threads();
 
         } else {
-            // node is joining an existing circle   <TYPE> <SENDER_ID> <KEY>
+            // node is joining an existing circle   <TYPE> <SENDER_ID> <PEER_REQUESTING> <KEY>
 
-            Message msg = new Message(MessageType.FIND_SUCCESSOR_KEY, get_address(), local_key);
+            final Message msg = new Message(MessageType.FIND_SUCCESSOR_KEY, get_address(), get_address(), local_key);
 
-            requestMessage(this, contact, 100, msg);
+            send_message(this, contact, msg);
 
         }
 
-        // start helper threads
-        //stabilize_thread.start();
+        return true;
+    }
+
+    public void start_helper_threads() {
+        stabilize_thread.start();
         //fixFingers_thread.start();
         //predecessor_thread.start();
-
-        System.out.println("Joined circle successfully!");
-        return true;
+        print_thread.start();
     }
     
     /****************************** STABILIZE THREAD *******************************/
+
+    public void notify_successor() {
+        Message msg = new Message(MessageType.NOTIFY, get_address());
+        send_message(this, get_successor(), msg);
+    }
     
     /**
      * possible_predecessor thinks it might be your predecessor.
      */ 
-    public void notify(InetSocketAddress possible_predecessor) {
+    public void notified(final InetSocketAddress possible_predecessor) {
 
-        //if predecessor is null or ...
         if(get_predecessor() == null){
             predecessor = possible_predecessor;
             return;
         }
-        // ... possible_predecessor ∈ (predecessor, n) then
-        Key predecessor_key = Key.create_key_from_address(get_predecessor());
-        Key possible_predecessor_key = Key.create_key_from_address(possible_predecessor);
+        final Key predecessor_key = Key.create_key_from_address(get_predecessor());
+        final Key possible_predecessor_key = Key.create_key_from_address(possible_predecessor);
         if(betweenKeys(predecessor_key.key, possible_predecessor_key.key, local_key.key)){
             predecessor = possible_predecessor;
             return;
         }
-
-        // EDU
-        /*if (successor.equals(this.get_local_address())) {
-            System.out.println("successor is self :/");
-            return false;
-        }
-
-        Message msg = new Message(MessageType.PREDECESSOR, get_address());
-        MessageSender msg_sender = new MessageSender(this, successor, msg);
-        executor.execute(msg_sender);
-       
-        return true;
-        */
     }
 
     /****************************** FIX FINGERS THREAD ******************************/
 
-    public boolean betweenKeys(long key0, long key, long key1) {
+    public boolean betweenKeys(final long key0, final long key, final long key1) {
         // if key is between the two keys in the ring: ... key0 -> key -> key1 ...
         if ((key0 < key && key <= key1) || ((key0 >= key1) && (key0 < key || key <= key1))){
             return true;
@@ -253,9 +247,9 @@ public class ChordNode implements RMI {
     /**
      * Finds the successor of key
      */
-	public InetSocketAddress find_successor_addr(long key, InetSocketAddress requesting_peer, Message message) {
+	public InetSocketAddress find_successor_addr(final long key, final Message message) {
 
-        Key successor_key = Key.create_key_from_address(get_successor());
+        final Key successor_key = Key.create_key_from_address(get_successor());
 
         //if key ∈ ]this_node_key, successor_key] then
         if(betweenKeys(this.local_key.key, key, successor_key.key ))
@@ -263,14 +257,14 @@ public class ChordNode implements RMI {
 
         // forward the query around the circle
         else{
-            InetSocketAddress n0_addr = closest_preceding_node_addr(key);
+            final InetSocketAddress n0_addr = closest_preceding_node_addr(key);
             if(n0_addr == local_address)
                 return local_address;
 
             //return n0_addr.find_successor(key) -> send message 
             System.out.println("Message sent: find successor of key  " + key + " in " + n0_addr);
-            Message msg = new Message(MessageType.FIND_SUCCESSOR_KEY, get_address());
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            final Message msg = new Message(MessageType.FIND_SUCCESSOR_KEY, get_address());
+            final ByteArrayOutputStream bos = new ByteArrayOutputStream();
             ObjectOutputStream out = null;
             byte[] keyBytes = null;
             try {
@@ -278,12 +272,12 @@ public class ChordNode implements RMI {
                 out.writeObject(key);
                 out.flush();
                 keyBytes = bos.toByteArray();
-            } catch (IOException e) {
+            } catch (final IOException e) {
                 // ignore exception
             } finally {
                 try {
                     bos.close();
-                } catch (IOException ex) {
+                } catch (final IOException ex) {
                     // ignore close exception
                 }
             }
@@ -298,11 +292,11 @@ public class ChordNode implements RMI {
     /**
      * search the local table for the highest predecessor of key
      */
-    private InetSocketAddress closest_preceding_node_addr(long key) {
+    private InetSocketAddress closest_preceding_node_addr(final long key) {
 
         for (int i = KEY_SIZE; i >= 1; i--) {
             if(finger_table.get(i) != null){
-                Key finger_i_key = Key.create_key_from_address(finger_table.get(i));
+                final Key finger_i_key = Key.create_key_from_address(finger_table.get(i));
             
                 //if finger[i] ∈ ]this_node_key, key] then
                 if(betweenKeys(this.local_key.key, finger_i_key.key, key))
@@ -317,10 +311,10 @@ class ServerRunnable implements Runnable {
 
     SSLServer server;
 
-    public ServerRunnable(ChordNode peer, String ip, int port) {
+    public ServerRunnable(final ChordNode peer, final String ip, final int port) {
         try {
             server = new SSLServer(peer, ip, port);
-        } catch (Exception e) {
+        } catch (final Exception e) {
             e.printStackTrace();
         }
     }
@@ -329,7 +323,7 @@ class ServerRunnable implements Runnable {
     public void run() {
         try {
             server.start();
-        } catch (Exception e) {
+        } catch (final Exception e) {
             e.printStackTrace();
         }
     }

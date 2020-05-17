@@ -16,6 +16,7 @@ import src.network.SSLClient;
 public class Utils {
     public static final int KEY_SIZE = 5;
     public static final String CRLF = "\r\n\r\n";
+    private static ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);    
 
     public static String hash(byte[] data) {
         MessageDigest message_digest = null;
@@ -80,13 +81,28 @@ public class Utils {
             SSLClient client = new SSLClient(peer, destination.getAddress().getHostAddress(), destination.getPort());
             MessageSender msg_sender = new MessageSender(msg, client);
             peer.get_executor().execute(msg_sender);
+            Thread.sleep(250);
+            client.shutdown();
         } catch (Exception e1) {
             e1.printStackTrace();
         }
     }
 
     public static String address_to_string(InetSocketAddress address) {
+        if (address == null) return "null";
         return address.getAddress().getHostAddress() + ":" + address.getPort();
+    }
+
+
+    public static byte[] longToBytes(long x) {
+        buffer.putLong(0, x);
+        return buffer.array();
+    }
+
+    public static long bytesToLong(byte[] bytes) {
+        buffer.put(bytes, 0, bytes.length);
+        buffer.flip();
+        return buffer.getLong();
     }
 
 }
