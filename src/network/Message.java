@@ -23,6 +23,11 @@ public class Message {
         this.body = "".getBytes();
     }
 
+    public Message(String type, String sender_address, int ith_finger) {
+        this.header = type + " " + sender_address + " " + ith_finger + CRLF;
+        this.body = "".getBytes();
+    }
+
     public Message(String type, String sender_address, String successor) {
         this.header = type + " " + sender_address + " " + successor + CRLF;
         this.body = "".getBytes();
@@ -30,6 +35,11 @@ public class Message {
 
     public Message(String type, String sender_address, String peer_requesting_address, Key key) {
         this.header = type + " " + sender_address + " " + peer_requesting_address + " " + key + CRLF;
+        this.body = "".getBytes();
+    }
+
+    public Message(String type, String sender_address, String peer_requesting_address, Key key, int ith_finger) {
+        this.header = type + " " + sender_address + " " + peer_requesting_address + " " + key + " " + ith_finger + CRLF;
         this.body = "".getBytes();
     }
 

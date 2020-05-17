@@ -36,7 +36,6 @@ public class StabilizeThread extends HelperThread{
 
         InetSocketAddress successor = node.get_successor();
 
-
         Message msg = new Message(MessageType.GET_PREDECESSOR, node.get_address());
         
         Message response = requestMessage(node, successor, 100, msg);

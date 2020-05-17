@@ -135,9 +135,17 @@ public class MessageReceiver implements Runnable {
             case MessageType.FIND_SUCCESSOR_KEY:
                 handle_find_successor_key();
                 break;
-            
+
+            case MessageType.FIND_SUCCESSOR_FINGER:
+                handle_find_successor_finger();
+                break;
+
             case MessageType.FOUND_SUCCESSOR_KEY:
                 handle_found_successor_key();
+                break;
+
+            case MessageType.FOUND_SUCCESSOR_FINGER:
+                handle_found_successor_finger();
                 break;
         }
     }
@@ -174,6 +182,31 @@ public class MessageReceiver implements Runnable {
             int peer_requesting_port = Integer.parseInt(peer_requesting.split(":")[1]);
             send_message(peer, new InetSocketAddress(peer_requesting_address, peer_requesting_port), msg);
         }
+    }
+
+    private void handle_find_successor_finger() {
+        long key = Long.parseLong(header_pieces[3]);
+        String peer_requesting = header_pieces[2];
+        int ith_finger = Integer.parseInt(header_pieces[4]);
+        msg = new Message(MessageType.FIND_SUCCESSOR_FINGER, peer.get_address(), peer_requesting, new Key(key), ith_finger);
+        InetSocketAddress successor = peer.find_successor_addr(key, msg);
+        System.out.println("Successor (FT): " + successor);
+        if (successor != null) {
+            msg = new Message(MessageType.FOUND_SUCCESSOR_FINGER, peer.get_address(), ith_finger);
+            msg.set_body(address_to_string(successor).getBytes());
+            String peer_requesting_address = peer_requesting.split(":")[0];
+            int peer_requesting_port = Integer.parseInt(peer_requesting.split(":")[1]);
+            send_message(peer, new InetSocketAddress(peer_requesting_address, peer_requesting_port), msg);
+        }
+    }
+
+    private void handle_found_successor_finger() {
+        String[] pieces = new String(body).split(":");
+        String address = pieces[0];
+        int port = Integer.parseInt(pieces[1]);
+        int ith_finger = Integer.parseInt(header.split(" ")[2]);
+        peer.update_ith_finger(ith_finger, new InetSocketAddress(address, port));
+        peer.start_helper_threads();
     }
     
 }
