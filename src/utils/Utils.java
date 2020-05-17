@@ -53,7 +53,7 @@ public class Utils {
             MessageSender msg_sender = new MessageSender(msg, client);
             node.get_executor().execute(msg_sender);
             
-            Thread.sleep(1000);
+            Thread.sleep(250);
     
             response = client.read();
 
@@ -73,6 +73,20 @@ public class Utils {
         } catch (Exception e1) {
             e1.printStackTrace();
         }
+    }
+
+    public static void send_message(ChordNode peer, InetSocketAddress destination, Message msg) {
+        try {
+            SSLClient client = new SSLClient(peer, destination.getAddress().getHostAddress(), destination.getPort());
+            MessageSender msg_sender = new MessageSender(msg, client);
+            peer.get_executor().execute(msg_sender);
+        } catch (Exception e1) {
+            e1.printStackTrace();
+        }
+    }
+
+    public static String address_to_string(InetSocketAddress address) {
+        return address.getAddress().getHostAddress() + ":" + address.getPort();
     }
 
 }

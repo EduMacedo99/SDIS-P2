@@ -106,7 +106,7 @@ public class ChordNode implements RMI {
 
     /* Setters and getters */
     public String get_address() {
-        return local_address.getAddress().getHostAddress() + ":" + local_address.getPort();
+        return address_to_string(local_address);
     }
 
     public InetSocketAddress get_local_address() {
@@ -189,34 +189,11 @@ public class ChordNode implements RMI {
             update_successor(local_address);
 
         } else {
-            // node is joining an existing circle
+            // node is joining an existing circle   <TYPE> <SENDER_ID> <KEY>
 
-            // this_successor := contact_node.find_successor(this) -> send message 
-            Key key = Key.create_key_from_address(local_address);
-            System.out.println("Message sent: find successor of key  " + key + " in " + contact);
-            Message msg2 = new Message(MessageType.FIND_SUCCESSOR_KEY, get_address());
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            ObjectOutputStream out = null;
-            byte[] keyBytes = null;
-            try {
-                out = new ObjectOutputStream(bos);   
-                out.writeObject((int) key.key);
-                out.flush();
-                keyBytes = bos.toByteArray();
-            } catch (IOException e) {
-                e.printStackTrace();
-                // ignore exception
-            } finally {
-                try {
-                    bos.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    // ignore close exception
-                }
-            }
-			msg2.set_body(keyBytes);
-            Message response = requestMessage(this,  contact, 100, msg2);
-            System.out.println("Found successor: " + response.get_header().split(" ")[1]);
+            Message msg = new Message(MessageType.FIND_SUCCESSOR_KEY, get_address(), local_key);
+
+            requestMessage(this, contact, 100, msg);
 
         }
 
@@ -274,9 +251,9 @@ public class ChordNode implements RMI {
     } 
 
     /**
-     * ask this node to find the successor of key
+     * Finds the successor of key
      */
-	public InetSocketAddress find_successor_addr(int key) {
+	public InetSocketAddress find_successor_addr(long key, InetSocketAddress requesting_peer, Message message) {
 
         Key successor_key = Key.create_key_from_address(get_successor());
 
@@ -321,9 +298,9 @@ public class ChordNode implements RMI {
     /**
      * search the local table for the highest predecessor of key
      */
-    private InetSocketAddress closest_preceding_node_addr(int key) {
+    private InetSocketAddress closest_preceding_node_addr(long key) {
 
-        for (int i = 1; i <= KEY_SIZE; i++) {
+        for (int i = KEY_SIZE; i >= 1; i--) {
             if(finger_table.get(i) != null){
                 Key finger_i_key = Key.create_key_from_address(finger_table.get(i));
             

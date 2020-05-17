@@ -10,6 +10,7 @@ public class MessageType {
     public static final String NOTIFY_IM_PREDECESSOR = "NOTIFY_IM_PREDECESSOR";
 
     public static final String FIND_SUCCESSOR_KEY = "FIND_SUCCESSOR_KEY";
+    public static final String FIND_SUCCESSOR_FINGER = "FIND_SUCCESSOR_FINGER";
     public static final String FOUND_SUCCESSOR_KEY = "FOUND_SUCCESSOR_KEY";
 
     public static final String GET_PREDECESSOR = "GET_PREDECESSOR";

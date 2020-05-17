@@ -56,7 +56,7 @@ public class SSLClient extends SSLPeer {
        return read(socket_channel, engine);
     }
 
-    protected void write(byte[] message) throws Exception {
+    public void write(byte[] message) throws Exception {
         write(socket_channel, engine, message);
     }
 
