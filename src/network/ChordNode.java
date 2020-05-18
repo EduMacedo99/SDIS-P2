@@ -205,7 +205,7 @@ public class ChordNode implements RMI {
 
     public void start_helper_threads() {
         stabilize_thread.start();
-        //fixFingers_thread.start();
+        fixFingers_thread.start();
         //predecessor_thread.start();
         print_thread.start();
     }
@@ -262,7 +262,6 @@ public class ChordNode implements RMI {
                 return local_address;
 
             //return n0_addr.find_successor(key) -> send message 
-            System.out.println("Message sent: find successor of key  " + key + " in " + n0_addr);
             final Message msg = new Message(MessageType.FIND_SUCCESSOR_KEY, get_address());
             final ByteArrayOutputStream bos = new ByteArrayOutputStream();
             ObjectOutputStream out = null;
@@ -282,7 +281,7 @@ public class ChordNode implements RMI {
                 }
             }
 			msg.set_body(keyBytes);
-            requestMessage(this,  n0_addr, 100, msg);
+            requestMessage(this,  n0_addr, 100, message);
 
         }
 

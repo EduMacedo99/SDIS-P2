@@ -174,7 +174,6 @@ public class MessageReceiver implements Runnable {
         String peer_requesting = header_pieces[2];
         msg = new Message(MessageType.FIND_SUCCESSOR_KEY, peer.get_address(), peer_requesting, new Key(key));
         InetSocketAddress successor = peer.find_successor_addr(key, msg);
-        System.out.println("Successor: " + successor);
         if (successor != null) {
             msg = new Message(MessageType.FOUND_SUCCESSOR_KEY, peer.get_address());
             msg.set_body(address_to_string(successor).getBytes());
@@ -190,7 +189,6 @@ public class MessageReceiver implements Runnable {
         int ith_finger = Integer.parseInt(header_pieces[4]);
         msg = new Message(MessageType.FIND_SUCCESSOR_FINGER, peer.get_address(), peer_requesting, new Key(key), ith_finger);
         InetSocketAddress successor = peer.find_successor_addr(key, msg);
-        System.out.println("Successor (FT): " + successor);
         if (successor != null) {
             msg = new Message(MessageType.FOUND_SUCCESSOR_FINGER, peer.get_address(), ith_finger);
             msg.set_body(address_to_string(successor).getBytes());
@@ -206,7 +204,6 @@ public class MessageReceiver implements Runnable {
         int port = Integer.parseInt(pieces[1]);
         int ith_finger = Integer.parseInt(header.split(" ")[2]);
         peer.update_ith_finger(ith_finger, new InetSocketAddress(address, port));
-        peer.start_helper_threads();
     }
     
 }

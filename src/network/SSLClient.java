@@ -91,7 +91,6 @@ public class SSLClient extends SSLPeer {
             System.err.println("Received end of stream. Will try to close connection with client...");
             handle_end_of_stream(socket_channel, engine);
         }
-
         return null;
     }
 
