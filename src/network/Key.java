@@ -6,6 +6,8 @@ import java.net.InetSocketAddress;
 import static src.utils.Utils.*;
 
 public class Key implements Serializable{
+    
+    private static final long serialVersionUID = 1L;
 
     public static final int MAXIMUM_KEY_SIZE = (int) Math.pow(2, KEY_SIZE);
 

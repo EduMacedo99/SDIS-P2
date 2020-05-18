@@ -2,9 +2,15 @@ package src.network;
 
 import static src.utils.Utils.*;
 
+import java.io.Serializable;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-public class Message {
+public class Message implements Serializable{
+    private static final long serialVersionUID = 1L;
+
+    String type;
+    String sender_address;
     String header;
     byte[] body;
 
@@ -14,32 +20,43 @@ public class Message {
     }
 
     public Message(String type) {
-        this.header = type + CRLF;
+        this.type = type;
+        this.header = type;
         this.body = "".getBytes();
     }
     
     public Message(String type, String sender_address) {
-        this.header = type + " " + sender_address + CRLF;
+        this.type = type;
+        this.sender_address = sender_address;
+        this.header = type + " " + sender_address;
         this.body = "".getBytes();
     }
 
     public Message(String type, String sender_address, int ith_finger) {
-        this.header = type + " " + sender_address + " " + ith_finger + CRLF;
+        this.type = type;
+        this.sender_address = sender_address;
+        this.header = type + " " + sender_address + " " + ith_finger;
         this.body = "".getBytes();
     }
 
     public Message(String type, String sender_address, String successor) {
-        this.header = type + " " + sender_address + " " + successor + CRLF;
+        this.type = type;
+        this.sender_address = sender_address;
+        this.header = type + " " + sender_address + " " + successor;
         this.body = "".getBytes();
     }
 
     public Message(String type, String sender_address, String peer_requesting_address, Key key) {
-        this.header = type + " " + sender_address + " " + peer_requesting_address + " " + key + CRLF;
+        this.type = type;
+        this.sender_address = sender_address;
+        this.header = type + " " + sender_address + " " + peer_requesting_address + " " + key;
         this.body = "".getBytes();
     }
 
     public Message(String type, String sender_address, String peer_requesting_address, Key key, int ith_finger) {
-        this.header = type + " " + sender_address + " " + peer_requesting_address + " " + key + " " + ith_finger + CRLF;
+        this.type = type;
+        this.sender_address = sender_address;
+        this.header = type + " " + sender_address + " " + peer_requesting_address + " " + key + " " + ith_finger;
         this.body = "".getBytes();
     }
 
@@ -79,5 +96,22 @@ public class Message {
 
     public byte[] get_body() {
         return body;
+    }
+
+    public String get_type() {
+        return type;
+    }
+
+    public InetSocketAddress get_sender_address() {
+        return string_to_address(sender_address);
+    }
+
+    public InetSocketAddress get_peer_requesting() {
+        String address_string = header.split(" ")[2];
+        return string_to_address(address_string);
+    }
+
+    public long get_key() {
+        return Long.parseLong(header.split(" ")[3]);
     }
 }

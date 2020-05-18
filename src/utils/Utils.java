@@ -1,17 +1,17 @@
 package src.utils;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLSocket;
 
 import src.network.ChordNode;
 import src.network.Message;
 import src.network.MessageSender;
-import src.network.SSLClient;
 
 public class Utils {
     public static final int KEY_SIZE = 5;
@@ -47,42 +47,40 @@ public class Utils {
 
     public static Message requestMessage(ChordNode node, InetSocketAddress destination, int time, Message msg) {
 
-        ByteBuffer response = null;
+        Message message = null;
 
         try {
-            SSLClient client = new SSLClient(node, destination.getAddress().getHostAddress(), destination.getPort());
-            MessageSender msg_sender = new MessageSender(msg, client);
-            node.get_executor().execute(msg_sender);
+            SSLSocket socket = MessageSender.send_message(msg, destination);
             
-            Thread.sleep(250);
+            //Thread.sleep(250);
     
-            response = client.read();
+            ObjectInputStream input = null;
+            
+            try {
+                input = new ObjectInputStream(socket.getInputStream());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
-            client.shutdown();
+            message = (Message) input.readObject();
+
+            socket.close();
 
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        return Message.build_msg_from_byte_buffer(response);
+        return message;
     }
 
-    public static void send_response(ChordNode peer, Message msg, SocketChannel socket_channel, SSLEngine engine) {
-        try {
-            SSLClient client = new SSLClient(peer, null, 0);
-            client.write(socket_channel, engine, msg.get_bytes());
-        } catch (Exception e1) {
-            e1.printStackTrace();
-        }
+    public static void send_response(ChordNode peer, Message msg, SSLSocket socket) {
+        MessageSender.send_message(msg, socket);
     }
 
     public static void send_message(ChordNode peer, InetSocketAddress destination, Message msg) {
         try {
-            SSLClient client = new SSLClient(peer, destination.getAddress().getHostAddress(), destination.getPort());
-            MessageSender msg_sender = new MessageSender(msg, client);
-            peer.get_executor().execute(msg_sender);
-            Thread.sleep(250);
-            client.shutdown();
+            SSLSocket socket = MessageSender.send_message(msg, destination);
+            socket.close();
         } catch (Exception e1) {
             e1.printStackTrace();
         }
@@ -91,6 +89,15 @@ public class Utils {
     public static String address_to_string(InetSocketAddress address) {
         if (address == null) return "null";
         return address.getAddress().getHostAddress() + ":" + address.getPort();
+    }
+
+    public static InetSocketAddress string_to_address(String address_string) {
+        try {
+            return new InetSocketAddress(address_string.split(":")[0], Integer.parseInt(address_string.split(":")[1]));
+        } catch(Exception e) {
+            e.toString();
+        }
+        return null;
     }
 
 

@@ -19,7 +19,7 @@ import  src.utils.MessageType;
 
 public class ChordNode implements RMI {
 
-    private final ServerRunnable serverRun;
+    private final Server server;
     private final Key local_key;
     private final InetSocketAddress local_address;
     private InetSocketAddress predecessor;
@@ -58,28 +58,31 @@ public class ChordNode implements RMI {
 
         
         // start server
-        final String host_address = local_address.getAddress().getHostAddress();
-        final int port = local_address.getPort();
-        serverRun = new ServerRunnable(this, host_address, port);
-        executor.execute(serverRun);
+        server = new Server(this, local_address.getPort());
+        server.start();
     }
 
     public static void main(final String[] args) {
-        if (args.length != 3 && args.length != 5) {
-            System.out.println("Usage: <host_address> <port> <access_point> [<contact_address> <contact_port>]");
+        if (args.length != 2 && args.length != 4) {
+            System.out.println("Usage: <port> <access_point> [<contact_address> <contact_port>]");
             return;
         }
 
-        final String host_address = args[0];
-        final int port = Integer.parseInt(args[1]);
-        final String access_point = args[2];
+        final String host_address = "localhost";
+        final int port = Integer.parseInt(args[0]);
+        final String access_point = args[1];
         final InetSocketAddress local_address = new InetSocketAddress(host_address, port);
         InetSocketAddress contact = local_address;
-        if (args.length == 5) {
-            final String contact_address = args[3];
-            final int contact_port = Integer.parseInt(args[4]);
+        if (args.length == 4) {
+            final String contact_address = args[2];
+            final int contact_port = Integer.parseInt(args[3]);
             contact = new InetSocketAddress(contact_address, contact_port);
         }
+
+        System.setProperty("javax.net.ssl.keyStore", "../keys/server.keys");
+        System.setProperty("javax.net.ssl.keyStorePassword", "123456");
+        System.setProperty("javax.net.ssl.trustStore", "../keys/truststore");
+        System.setProperty("javax.net.ssl.trustStorePassword", "123456");
 
         final ChordNode node = new ChordNode(local_address);
 
@@ -240,16 +243,16 @@ public class ChordNode implements RMI {
         final Key successor_key = Key.create_key_from_address(get_successor());
 
         //if key ∈ ]this_node_key, successor_key] then
-        if(betweenKeys(this.local_key.key, key, successor_key.key ))
+        if(betweenKeys(this.local_key.key, key, successor_key.key )) {
             return get_successor();
+        }
 
         else { // forward the query around the circle
-
             final InetSocketAddress n0_addr = closest_preceding_node_addr(key);
-            if(n0_addr == local_address)
+            if(n0_addr.equals(local_address))
                 return local_address;
 
-            requestMessage(this,  n0_addr, 100, message);
+            send_message(this, n0_addr, message);
         }
 
         return null;
@@ -271,27 +274,4 @@ public class ChordNode implements RMI {
         }
         return local_address;
     }
-}
-
-class ServerRunnable implements Runnable {
-
-    SSLServer server;
-
-    public ServerRunnable(final ChordNode peer, final String ip, final int port) {
-        try {
-            server = new SSLServer(peer, ip, port);
-        } catch (final Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    public void run() {
-        try {
-            server.start();
-        } catch (final Exception e) {
-            e.printStackTrace();
-        }
-    }
-
 }

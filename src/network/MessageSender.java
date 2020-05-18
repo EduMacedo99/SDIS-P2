@@ -1,32 +1,46 @@
 package src.network;
 
-import java.nio.ByteBuffer;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.net.InetSocketAddress;
 
-public class MessageSender implements Runnable {
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 
-    private Message msg;
-    public ByteBuffer response;
-    private SSLClient client;
+public class MessageSender {
 
-    public MessageSender(Message msg, SSLClient client) {
-        this.msg = msg;
-        this.client = client;
+    public static void send_message(Message msg, SSLSocket socket) {
+        try {
+            ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
+            output.writeObject(msg);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    @Override
-    public void run() {
+    public static SSLSocket send_message(Message msg, InetSocketAddress server) {
+        SSLSocket socket = connect(server);
         try {
-            client.connect();
-        } catch (Exception e) {
-            System.err.println("One or more problems occured while connecting to client!");
-            //e.printStackTrace();
+            ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
+            output.writeObject(msg);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        
+        return socket;
+    }
+
+    private static SSLSocket connect(InetSocketAddress server) {
+        SSLSocketFactory ssl_socket_factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+        SSLSocket socket = null;
+
         try {
-            client.write(msg.get_bytes());
-        } catch (Exception e) {
-            System.err.println("One or more problems occured while writing the message!");
-            //e.printStackTrace();
+            socket = (SSLSocket) ssl_socket_factory.createSocket(server.getAddress(), server.getPort());
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-	}
+
+        socket.setEnabledCipherSuites(socket.getSupportedCipherSuites());
+
+        return socket;
+    }
 }

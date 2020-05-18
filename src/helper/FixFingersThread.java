@@ -29,7 +29,6 @@ public class FixFingersThread extends HelperThread{
 
         for (int i = 1; i <= KEY_SIZE; i++) {
             long key = (node.get_local_key().key + (int) Math.pow(2, i - 1)) % (int) Math.pow(2, KEY_SIZE);
-            //System.out.println(key);
             Message msg = new Message(MessageType.FIND_SUCCESSOR_FINGER, node.get_address(), node.get_address(), new Key(key), i);
             InetSocketAddress finger = node.find_successor_addr(key, msg);
             if (finger != null) {
