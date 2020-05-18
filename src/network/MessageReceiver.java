@@ -1,11 +1,5 @@
 package src.network;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
@@ -28,14 +22,6 @@ public class MessageReceiver implements Runnable {
     private SSLEngine engine;
 
     private Message msg = null;
-    private MessageSender msg_sender = null;
-    private InetSocketAddress addr_response;
-    private int key_response;
-    private ByteArrayOutputStream bos;
-    private ByteArrayInputStream bis;
-    private ObjectOutputStream out;
-    private ObjectInput in;
-    private byte[] bytes;
 
     public MessageReceiver(ByteBuffer msg, ChordNode peer, SocketChannel socket_channel, SSLEngine engine) {
 
@@ -62,59 +48,13 @@ public class MessageReceiver implements Runnable {
 
     @Override
     public void run() {
-        peer.set_last_response(string_msg);
-        Message response;
         switch (type) {
             case MessageType.OK:
                 System.out.println("Response message received successfully!");
                 break;
 
-            // EDU
-            /*
-             * case MessageType.PREDECESSOR:
-             * System.out.println("Predecessor message received successfully!");
-             * //peer.set_predecessor(sender_address); System.out.println(sender_address); break;
-             */
-
             case MessageType.GET_PREDECESSOR:
                 handle_get_predecessor();
-                break;
-            case MessageType.RECEIVED_PREDECESSOR:
-                bis = new ByteArrayInputStream(body);
-                in = null;
-                addr_response = null;
-                try {
-                in = new ObjectInputStream(bis);
-                addr_response = (InetSocketAddress) in.readObject();
-                } catch (ClassNotFoundException | IOException e) {
-                    // ignore exception
-                    } finally {
-                        try {
-                            if (in != null) {
-                            in.close();
-                            }
-                        } catch (IOException ex) {
-                        // ignore close exception
-                    }
-                }
-                System.out.println("Message received: received predecessor " + addr_response + " of " + sender_address);
-                InetSocketAddress successor = peer.get_successor();
-                // decides wether p should be n‘s successor instead (this is the case if p recently joined the system).
-                Key predeccessor_key;
-                Key successor_key;
-                if(addr_response != null){
-                    predeccessor_key = Key.create_key_from_address(addr_response);
-                    successor_key = Key.create_key_from_address(successor);
-                    // if predeccessor ∈ (n, successor) then
-                    if(peer.betweenKeys(peer.get_local_key().key, predeccessor_key.key, successor_key.key)){
-                        peer.update_ith_finger(1, addr_response);
-                        successor = addr_response;
-                    }
-                }
-                // successor.notify(n)
-                //Message msg = new Message(MessageType.NOTIFY_IM_PREDECESSOR, peer.get_address());
-                requestMessage(peer,  successor, 100, msg);
-                
                 break;
 
             case MessageType.NOTIFY:
@@ -125,7 +65,6 @@ public class MessageReceiver implements Runnable {
                 System.out.println("Message received: asking if i am alive");
                 msg = new Message(MessageType.SENDING_KEY, peer.get_address());
                 requestMessage(peer,  sender_address, 100, msg);
-          
                 break;
             
             case MessageType.SENDING_KEY:

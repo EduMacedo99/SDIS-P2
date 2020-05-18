@@ -2,15 +2,12 @@ package src.helper;
 
 import src.network.*;
 import src.utils.MessageType;
-
-import java.util.concurrent.ExecutorService;
 import java.net.InetSocketAddress;
-
 import static src.utils.Utils.requestMessage;
 
 /**
- * called periodically. 
- * checks whether predecessor has failed.
+ * Called periodically. 
+ * Checks whether predecessor has failed.
  */
 public class PredecessorThread extends HelperThread{
     
@@ -27,7 +24,7 @@ public class PredecessorThread extends HelperThread{
     public void run() {
 
         if(chordNode.get_successor() == null )
-        return;
+            return;
 
         InetSocketAddress predecessor = chordNode.get_predecessor();
         if (predecessor == null) {

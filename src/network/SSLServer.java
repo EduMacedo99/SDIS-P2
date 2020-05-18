@@ -82,7 +82,7 @@ public class SSLServer extends SSLPeer {
                 switch (result.getStatus()) {
                     case OK:
                         peer_app_data.flip();
-                        peer.get_executor().execute(new MessageReceiver(peer_app_data, peer, socket_channel, engine ));
+                        peer.get_executor().execute(new MessageReceiver(peer_app_data, peer, socket_channel, engine));
                         break;
                     case BUFFER_OVERFLOW:
                         peer_app_data = handle_overflow_application(engine, peer_app_data);

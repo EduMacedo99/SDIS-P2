@@ -1,8 +1,5 @@
 package src.network;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.net.InetSocketAddress;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -28,7 +25,6 @@ public class ChordNode implements RMI {
     private InetSocketAddress predecessor;
     public HashMap<Integer, InetSocketAddress> finger_table;
     private final ExecutorService executor;
-    private String last_response;
 
     private final StabilizeThread stabilize_thread;
     private final FixFingersThread fixFingers_thread;
@@ -137,14 +133,6 @@ public class ChordNode implements RMI {
         return this.executor;
     }
 
-    public String get_last_response(){
-        return last_response;
-    }
-
-    public void set_last_response(final String response) {
-        this.last_response = response;
-    }
-
     public Key get_local_key() {
         return local_key;
     }
@@ -187,12 +175,12 @@ public class ChordNode implements RMI {
             return false;
         }
         if (contact.equals(local_address)) {
-            // circle is being created
+            // Circle is being created
             update_successor(local_address);
             start_helper_threads();
 
         } else {
-            // node is joining an existing circle   <TYPE> <SENDER_ID> <PEER_REQUESTING> <KEY>
+            // Node is joining an existing circle   <TYPE> <SENDER_ID> <PEER_REQUESTING> <KEY>
 
             final Message msg = new Message(MessageType.FIND_SUCCESSOR_KEY, get_address(), get_address(), local_key);
 
@@ -254,7 +242,7 @@ public class ChordNode implements RMI {
         //if key ∈ ]this_node_key, successor_key] then
         if(betweenKeys(this.local_key.key, key, successor_key.key ))
             return get_successor();
-            
+
         else { // forward the query around the circle
 
             final InetSocketAddress n0_addr = closest_preceding_node_addr(key);
@@ -268,7 +256,7 @@ public class ChordNode implements RMI {
 	}
 
     /**
-     * search the local table for the highest predecessor of key
+     * Searches the local table for the highest predecessor of key.
      */
     private InetSocketAddress closest_preceding_node_addr(final long key) {
 

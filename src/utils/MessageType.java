@@ -16,5 +16,6 @@ public class MessageType {
 
     public static final String GET_PREDECESSOR = "GET_PREDECESSOR";
     public static final String PREDECESSOR = "PREDECESSOR";
-    public static final String RECEIVED_PREDECESSOR = "RECEIVED_PREDECESSOR";
+
+    public static final String ARE_YOU_ALIVE = "ARE_YOU_ALIVE";
 }
