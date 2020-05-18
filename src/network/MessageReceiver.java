@@ -140,7 +140,7 @@ public class MessageReceiver implements Runnable {
     private void handle_found_successor_finger() {
         String[] pieces = new String(body).split(":");
         String address = pieces[0];
-        int port = Integer.parseInt(pieces[1]);
+        int port = Integer.parseInt(pieces[1].substring(0, 4));
         int ith_finger = Integer.parseInt(header.split(" ")[2]);
         peer.update_ith_finger(ith_finger, new InetSocketAddress(address, port));
     }
