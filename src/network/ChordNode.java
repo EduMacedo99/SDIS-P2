@@ -254,35 +254,14 @@ public class ChordNode implements RMI {
         //if key ∈ ]this_node_key, successor_key] then
         if(betweenKeys(this.local_key.key, key, successor_key.key ))
             return get_successor();
+            
+        else { // forward the query around the circle
 
-        // forward the query around the circle
-        else{
             final InetSocketAddress n0_addr = closest_preceding_node_addr(key);
             if(n0_addr == local_address)
                 return local_address;
 
-            //return n0_addr.find_successor(key) -> send message 
-            final Message msg = new Message(MessageType.FIND_SUCCESSOR_KEY, get_address());
-            final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            ObjectOutputStream out = null;
-            byte[] keyBytes = null;
-            try {
-                out = new ObjectOutputStream(bos);   
-                out.writeObject(key);
-                out.flush();
-                keyBytes = bos.toByteArray();
-            } catch (final IOException e) {
-                // ignore exception
-            } finally {
-                try {
-                    bos.close();
-                } catch (final IOException ex) {
-                    // ignore close exception
-                }
-            }
-			msg.set_body(keyBytes);
             requestMessage(this,  n0_addr, 100, message);
-
         }
 
         return null;
