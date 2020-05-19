@@ -15,5 +15,8 @@ public class MessageType {
     public static final String ARE_YOU_ALIVE = "ARE_YOU_ALIVE";
     public static final String I_AM_ALIVE = "I_AM_ALIVE";
 
-    public static final String BACKUP_FILE = "BACKUP_FILE";
+    public static final String FIND_BACKUP_NODE = "FIND_BACKUP_NODE";
+    public static final String FOUND_BACKUP_NODE = "FOUND_BACKUP_NODE";
+
+	public static final String BACKUP_FILE = "BACKUP_FILE";
 }

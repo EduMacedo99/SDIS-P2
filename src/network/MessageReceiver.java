@@ -1,6 +1,10 @@
 package src.network;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 import javax.net.ssl.SSLSocket;
 
 import static src.utils.Utils.*;
@@ -37,9 +41,20 @@ public class MessageReceiver {
 
             case MessageType.ARE_YOU_ALIVE:
                 handle_are_you_alive(node, socket);
+                break;
+
+            case MessageType.FIND_BACKUP_NODE:
+                handle_find_backup_node(msg, node);
+                break;
+
+            case MessageType.FOUND_BACKUP_NODE:
+                handle_found_backup_node(msg, node);
+                break;
 
             case MessageType.BACKUP_FILE:
-                handle_backup_file(msg, node);
+                System.out.println("TENHO DE FAZER BACKUP");
+                break;
+            
         }
     }
 
@@ -98,9 +113,45 @@ public class MessageReceiver {
     }
 
 
-    private static void handle_backup_file(Message msg, ChordNode node) {
-        node.backupFile(msg.get_key(), msg.get_file_name(), msg.get_replication_degree(), msg.get_body());
+    private static void handle_find_backup_node(Message msg, ChordNode node) {
+        long key = msg.get_key();
+        InetSocketAddress peer_requesting = msg.get_peer_requesting();
+        msg = new Message(MessageType.FIND_BACKUP_NODE, node.get_address(), address_to_string(peer_requesting), new Key(key));
+        InetSocketAddress successor = node.find_successor_addr(key, msg);
+        if (successor != null) {
+            msg = new Message(MessageType.FOUND_BACKUP_NODE, node.get_address(), address_to_string(peer_requesting), new Key(key));
+            msg.set_body(address_to_string(successor).getBytes());
+            send_message(node, peer_requesting, msg);
+        }
     }
-
     
+
+    private static void handle_found_backup_node(Message msg, ChordNode node) {
+        String[] pieces = new String(msg.get_body()).split(":");
+        String address = pieces[0];
+        int port = Integer.parseInt(pieces[1]);
+        System.out.println("----------");
+        System.out.println("key: " + msg.get_key());
+        System.out.println("successor: " + address + " " + port);
+        
+        //MANDAR FILE
+        Path path = node.files_list.get(msg.get_key());
+        if(path != null){
+            msg = new Message(MessageType.BACKUP_FILE, node.get_address(), node.get_address(), new Key(msg.get_key()));
+
+            byte[] bFile = null;
+
+            // get file bytes via Java.nio
+            try {
+                bFile = Files.readAllBytes(path);
+            } catch (IOException ex) {
+                System.err.println("The file you want to backup was not found\n");
+                return;
+            }
+
+            msg.set_body(bFile);
+            send_message(node, new InetSocketAddress(address, port) , msg);
+        }
+
+    }
 }

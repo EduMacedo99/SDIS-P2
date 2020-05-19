@@ -3,7 +3,9 @@ package src.network;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Stream;
@@ -37,6 +39,8 @@ public class ChordNode implements RMI {
 
     protected String filesPath;
     protected String chunkPath;
+
+    public HashMap<Long, Path> files_list  = new HashMap<Long, Path>();
 
     public ChordNode(final InetSocketAddress local_address) {
         // initialize local address
@@ -123,37 +127,45 @@ public class ChordNode implements RMI {
 
         String filePath = this.filesPath + '/' + fileName;
         Path path = Paths.get(filePath);
-        byte[] bFile = null;
-
-        // get file bytes via Java.nio
-        try {
-            bFile = Files.readAllBytes(path);
-        } catch (IOException ex) {
-            System.err.println("The file you want to backup was not found\n");
-            return;
-        }
 
         // get file key
         Key key_file = null;
         try {
             key_file = Key.create_key_file(filePath);
+            files_list.put(key_file.key, path);
             System.err.println("Key File: " + key_file.key);
         } catch (NoSuchAlgorithmException | IOException e) {
             System.err.println("Something went wrong while hashing the file key\n");
             return;
         }
 
-        //get successor of file key
-        Message find_succ_msg = new Message(MessageType.FIND_SUCCESSOR_FINGER, get_address(), get_address(), key_file);
+
+        //send to successor of file key
+        Message find_succ_msg = new Message(MessageType.FIND_BACKUP_NODE, get_address(), get_address(), key_file);
         InetSocketAddress successor = find_successor_addr(key_file.key, find_succ_msg);
         if (successor != null) {
-            System.err.println("Sucessor address: " + successor);
-        }
+            System.out.println("key: " + key_file);
+            System.out.println("successor!null: " + successor);
 
-        //store file in the successor node of file key, and start the BACKUP subprotocol from there
-        Message store_file_msg = new Message(MessageType.BACKUP_FILE, get_address(), address_to_string(successor), bFile, key_file, fileName, replication_degree);
-        //TODO: return a bool or int ro see if replication_degree is good
-        send_message(this, successor, store_file_msg);
+            if(path != null){
+                Message msg = new Message(MessageType.BACKUP_FILE, get_address(), get_address(), key_file);
+
+                byte[] bFile = null;
+
+                // get file bytes via Java.nio
+                try {
+                    bFile = Files.readAllBytes(path);
+                } catch (IOException ex) {
+                    System.err.println("The file you want to backup was not found\n");
+                    return;
+                }
+
+                msg.set_body(bFile);
+                send_message(this, successor , msg);
+            }
+        }
+        
+
 
     }
 
