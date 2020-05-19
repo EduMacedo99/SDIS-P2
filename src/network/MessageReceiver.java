@@ -37,6 +37,9 @@ public class MessageReceiver {
 
             case MessageType.ARE_YOU_ALIVE:
                 handle_are_you_alive(node, socket);
+
+            case MessageType.BACKUP_FILE:
+                handle_backup_file(msg, node);
         }
     }
 
@@ -93,5 +96,11 @@ public class MessageReceiver {
         int ith_finger = Integer.parseInt(msg.get_header().split(" ")[2]);
         node.update_ith_finger(ith_finger, string_to_address(new String(msg.get_body())));
     }
+
+
+    private static void handle_backup_file(Message msg, ChordNode node) {
+        node.backupFile(msg.get_key(), msg.get_file_name(), msg.get_replication_degree(), msg.get_body());
+    }
+
     
 }

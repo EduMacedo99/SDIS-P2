@@ -1,12 +1,19 @@
 package src.network;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Stream;
 
 import static src.utils.Utils.*;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.NoSuchAlgorithmException;
 
 import src.helper.FixFingersThread;
 import src.helper.PredecessorThread;
@@ -27,6 +34,9 @@ public class ChordNode implements RMI {
     private final FixFingersThread fixFingers_thread;
     private final PredecessorThread predecessor_thread;
     private final PrintThread print_thread;
+
+    protected String filesPath;
+    protected String chunkPath;
 
     public ChordNode(final InetSocketAddress local_address) {
         // initialize local address
@@ -57,13 +67,20 @@ public class ChordNode implements RMI {
         server = new Server(this, local_address.getPort());
         server.start();
 
+        filesPath = "peers/" + local_key.key + "/files";
+        chunkPath = "peers/" + local_key.key + "/chunks";
+
+        createDirectory(filesPath);
+        createDirectory(chunkPath);
 
     }
 
     private void createDirectory(String path) {
         File file = new File(path);
-        if (file.mkdirs()) System.out.println("New directory created: " + path);
-        else System.out.println("Directory " + path + "already eists");
+        if (file.mkdirs())
+            System.out.println("New directory created: " + path);
+        else
+            System.out.println("Directory " + path + "already eists");
     }
 
     /* Setters and getters */
@@ -101,8 +118,43 @@ public class ChordNode implements RMI {
 
     /* Service Interface */
 
-    public void backup(final String filepath, final int replication_degree) {
+    public void backup(final String fileName, final int replication_degree) {
         System.out.println("Backup is being initiated");
+
+        String filePath = this.filesPath + '/' + fileName;
+        Path path = Paths.get(filePath);
+        byte[] bFile = null;
+
+        // get file bytes via Java.nio
+        try {
+            bFile = Files.readAllBytes(path);
+        } catch (IOException ex) {
+            System.err.println("The file you want to backup was not found\n");
+            return;
+        }
+
+        // get file key
+        Key key_file = null;
+        try {
+            key_file = Key.create_key_file(filePath);
+            System.err.println("Key File: " + key_file.key);
+        } catch (NoSuchAlgorithmException | IOException e) {
+            System.err.println("Something went wrong while hashing the file key\n");
+            return;
+        }
+
+        //get successor of file key
+        Message find_succ_msg = new Message(MessageType.FIND_SUCCESSOR_FINGER, get_address(), get_address(), key_file);
+        InetSocketAddress successor = find_successor_addr(key_file.key, find_succ_msg);
+        if (successor != null) {
+            System.err.println("Sucessor address: " + successor);
+        }
+
+        //store file in the successor node of file key, and start the BACKUP subprotocol from there
+        Message store_file_msg = new Message(MessageType.BACKUP_FILE, get_address(), address_to_string(successor), bFile, key_file, fileName, replication_degree);
+        //TODO: return a bool or int ro see if replication_degree is good
+        send_message(this, successor, store_file_msg);
+
     }
 
     public void restore(final String filepath) {
@@ -236,50 +288,20 @@ public class ChordNode implements RMI {
 
 
     /**
-     * BACKUP subprotocol
-     * 
-     * - Sends the file to the circle through a new thread
-     * 
-     * - After sending the message, the peer collects the confirmation messages during a 
-     * time interval of one second to see if that chunk is backed up with the desired 
-     * replication degree.
-     * 
-     * - If the number of confirmation messages it received up to the end of that interval 
-     * is lower than the desired replication degree ... nao sei
-     * 
-     * @param fileBytes
-     * @param key
-     * @param replication_degree
+     * Store file in the node via Java.nio
      */
-	public void requestFileBackup(byte[] fileBytes, long key, int replication_degree) {
+	public void backupFile(long key, String file_name, long replication_degree, byte[] bFile) {
 
-      /*  Runnable runnable = () -> {
+        //create file
 
-            // Create message
-            
-            InetSocketAddress successor = get_successor();
-            Message msg = new Message(MessageType.REQUEST_BACKUP, get_address());
-            Message response = request_message(this, successor, msg);
-            
+        //write to file
+        Path path = Paths.get(this.filesPath + '/' + file_name);
+        try{
+            Files.write(path, bFile);
 
-            // Waits the specific time interval for the confirmation messages
-            try {
-                Thread.sleep(time_interval);
-            } catch (InterruptedException e) {
-                System.err.println("Peer - Thread was interrupted while waiting for the confirmation messages");
-                continue;
-            }
+        }catch(IOException ex){
+            ex.printStackTrace();
+        }
 
-
-            int achievedRepDeg = chunksController.getChunkReplicationDegree(fileID, Integer.toString(chunkNo));
-            if (achievedRepDeg < repDegree) {
-                System.out.println("Fail to achieved replication degree, only achieved:" + achievedRepDeg);
-            } else System.out.println("Successfully backed up chunk "+ chunkNo + " of file " + fileID + ", achieved: " + achievedRepDeg);
-
-        };
-
-        Thread thread = new Thread(runnable);
-        thread.start();*/
-
-	} 
+	}
 }

@@ -1,7 +1,10 @@
 package src.network;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.net.InetSocketAddress;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 import static src.utils.Utils.*;
 
@@ -33,10 +36,39 @@ public class Key implements Serializable{
     public String toString() {
         return key + "";
     }
+    
+    /**
+     *
+     * @param string to hash
+     * @return
+     * @throws IOException
+     * @throws NoSuchAlgorithmException
+     *
+     *
+     * This code of this function was was made with the help of this website as a resource
+     * https://www.baeldung.com/sha-256-hashing-java
+     */
+    private static String getHash(String string) throws IOException, NoSuchAlgorithmException {
 
-    public static Key create_key_file(String path) {
-        String hashed = hash(path.getBytes()); 
+
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] hash = digest.digest(string.getBytes());
+        StringBuffer hexString = new StringBuffer();
+
+        for (int i = 0; i < hash.length; i++) {
+            String hex = Integer.toHexString(0xff & hash[i]);
+            if (hex.length() == 1)
+                hexString.append('0');
+            hexString.append(hex);
+            }
+            return hexString.toString();
+
+    }
+
+    public static Key create_key_file(String path) throws IOException, NoSuchAlgorithmException{
+        String hashed = getHash(path); 
         return new Key(hashed.hashCode());
+       
     }
 
 }

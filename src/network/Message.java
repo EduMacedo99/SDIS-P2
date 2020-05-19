@@ -60,7 +60,14 @@ public class Message implements Serializable{
         this.body = "".getBytes();
     }
 
-    public void set_body(byte[] body) {
+    public Message(String type, String sender_address, String peer_requesting_address, byte[] bFile, Key key, String file_name, int replication_degree) {
+        this.type = type;
+        this.sender_address = sender_address;
+        this.header = type + " " + sender_address + " " + peer_requesting_address + " " + key + " " + file_name + " " + replication_degree;
+        this.body = bFile;
+	}
+
+	public void set_body(byte[] body) {
         this.body = body;
     }
 
@@ -113,5 +120,13 @@ public class Message implements Serializable{
 
     public long get_key() {
         return Long.parseLong(header.split(" ")[3]);
+    }
+
+    public String get_file_name() {
+        return header.split(" ")[4];
+    }
+
+    public long get_replication_degree() {
+        return Long.parseLong(header.split(" ")[5]);
     }
 }
