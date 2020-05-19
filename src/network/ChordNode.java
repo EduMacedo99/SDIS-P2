@@ -1,5 +1,6 @@
 package src.network;
 
+import java.io.File;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
@@ -11,6 +12,7 @@ import src.helper.FixFingersThread;
 import src.helper.PredecessorThread;
 import src.helper.PrintThread;
 import src.helper.StabilizeThread;
+import src.service.PeerClient;
 import src.utils.MessageType;
 
 public class ChordNode implements RMI {
@@ -55,6 +57,14 @@ public class ChordNode implements RMI {
         // start server
         server = new Server(this, local_address.getPort());
         server.start();
+
+
+    }
+
+    private void createDirectory(String path) {
+        File file = new File(path);
+        if (file.mkdirs()) System.out.println("New directory created: " + path);
+        else System.out.println("Directory " + path + "already eists");
     }
 
     /* Setters and getters */
@@ -223,5 +233,54 @@ public class ChordNode implements RMI {
             }
         }
         return local_address;
-    } 
+    }
+
+
+    /**
+     * BACKUP subprotocol
+     * 
+     * - Sends the file to the circle through a new thread
+     * 
+     * - After sending the message, the peer collects the confirmation messages during a 
+     * time interval of one second to see if that chunk is backed up with the desired 
+     * replication degree.
+     * 
+     * - If the number of confirmation messages it received up to the end of that interval 
+     * is lower than the desired replication degree ... nao sei
+     * 
+     * @param fileBytes
+     * @param key
+     * @param replication_degree
+     */
+	public void requestFileBackup(byte[] fileBytes, long key, int replication_degree) {
+
+      /*  Runnable runnable = () -> {
+
+            // Create message
+            
+            InetSocketAddress successor = get_successor();
+            Message msg = new Message(MessageType.REQUEST_BACKUP, get_address());
+            Message response = request_message(this, successor, msg);
+            
+
+            // Waits the specific time interval for the confirmation messages
+            try {
+                Thread.sleep(time_interval);
+            } catch (InterruptedException e) {
+                System.err.println("Peer - Thread was interrupted while waiting for the confirmation messages");
+                continue;
+            }
+
+
+            int achievedRepDeg = chunksController.getChunkReplicationDegree(fileID, Integer.toString(chunkNo));
+            if (achievedRepDeg < repDegree) {
+                System.out.println("Fail to achieved replication degree, only achieved:" + achievedRepDeg);
+            } else System.out.println("Successfully backed up chunk "+ chunkNo + " of file " + fileID + ", achieved: " + achievedRepDeg);
+
+        };
+
+        Thread thread = new Thread(runnable);
+        thread.start();*/
+
+	} 
 }

@@ -33,4 +33,10 @@ public class Key implements Serializable{
     public String toString() {
         return key + "";
     }
+
+    public static Key create_key_file(String path) {
+        String hashed = hash(path.getBytes()); 
+        return new Key(hashed.hashCode());
+    }
+
 }
