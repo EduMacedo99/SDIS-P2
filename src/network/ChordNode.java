@@ -104,19 +104,6 @@ public class ChordNode implements RMI {
             return;
         }
 
-        new Thread() {
-            public void run() {
-                try {
-                    Thread.sleep(15000);
-                    node.makeFingersNullTemp();
-                } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
-
-            }
-          }.start();
-
     }
 
     /* Setters and getters */
@@ -285,14 +272,5 @@ public class ChordNode implements RMI {
             }
         }
         return local_address;
-    } // TODO COLOCAR FINGERS QUE NAO EXISTAM COMO LOCAL ADDRESS
-
-    private void makeFingersNullTemp() {
-        System.out.println("MAKING FINGERS NULL");
-        for(int i = KEY_SIZE; i >= 1; i--) {
-            if(finger_table.get(i).equals(new InetSocketAddress("localhost", 8001))) {
-                update_ith_finger(i, local_address);
-            }
-        }
-    }
+    } 
 }
