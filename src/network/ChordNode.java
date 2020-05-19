@@ -12,7 +12,6 @@ import src.helper.FixFingersThread;
 import src.helper.PredecessorThread;
 import src.helper.PrintThread;
 import src.helper.StabilizeThread;
-import src.service.PeerClient;
 import src.utils.MessageType;
 
 public class ChordNode implements RMI {

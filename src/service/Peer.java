@@ -11,8 +11,6 @@ import src.network.RMI;
 
 public class Peer {
 
-    private static PeerClient peerClient;
-
     public static void main(final String[] args) {
         if (args.length != 2 && args.length != 4) {
             System.out.println("Usage: <port> <access_point> [<contact_address> <contact_port>]");
@@ -36,8 +34,6 @@ public class Peer {
         System.setProperty("javax.net.ssl.trustStorePassword", "123456");
 
         ChordNode node = new ChordNode(local_address);
-
-        peerClient = new PeerClient(node);
 
         try { /* RMI */
             final RMI stub = (RMI) UnicastRemoteObject.exportObject(node, 0);
