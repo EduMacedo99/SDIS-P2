@@ -15,7 +15,7 @@ import src.helper.FixFingersThread;
 import src.helper.PredecessorThread;
 import src.helper.PrintThread;
 import src.helper.StabilizeThread;
-import  src.utils.MessageType;
+import src.utils.MessageType;
 
 public class ChordNode implements RMI {
 
@@ -31,7 +31,7 @@ public class ChordNode implements RMI {
     private final PredecessorThread predecessor_thread;
     private final PrintThread print_thread;
 
-    public ChordNode(final InetSocketAddress local_address){
+    public ChordNode(final InetSocketAddress local_address) {
         // initialize local address
         this.local_address = local_address;
 
@@ -52,11 +52,10 @@ public class ChordNode implements RMI {
         executor = Executors.newFixedThreadPool(250);
         stabilize_thread = new StabilizeThread(this, 3000);
         fixFingers_thread = new FixFingersThread(this, 3000);
-        predecessor_thread = new PredecessorThread(this);
+        predecessor_thread = new PredecessorThread(this, 3000);
         // provisory
         print_thread = new PrintThread(this, 3000);
 
-        
         // start server
         server = new Server(this, local_address.getPort());
         server.start();
@@ -104,6 +103,19 @@ public class ChordNode implements RMI {
         if (!node.join(contact)) {
             return;
         }
+
+        new Thread() {
+            public void run() {
+                try {
+                    Thread.sleep(15000);
+                    node.makeFingersNullTemp();
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+
+            }
+          }.start();
 
     }
 
@@ -197,7 +209,7 @@ public class ChordNode implements RMI {
     public void start_helper_threads() {
         stabilize_thread.start();
         fixFingers_thread.start();
-        //predecessor_thread.start();
+        predecessor_thread.start();
         print_thread.start();
     }
     
@@ -273,5 +285,14 @@ public class ChordNode implements RMI {
             }
         }
         return local_address;
+    } // TODO COLOCAR FINGERS QUE NAO EXISTAM COMO LOCAL ADDRESS
+
+    private void makeFingersNullTemp() {
+        System.out.println("MAKING FINGERS NULL");
+        for(int i = KEY_SIZE; i >= 1; i--) {
+            if(finger_table.get(i).equals(new InetSocketAddress("localhost", 8001))) {
+                update_ith_finger(i, local_address);
+            }
+        }
     }
 }

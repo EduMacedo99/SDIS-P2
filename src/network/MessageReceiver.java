@@ -34,7 +34,15 @@ public class MessageReceiver {
             case MessageType.FOUND_SUCCESSOR_FINGER:
                 handle_found_successor_finger(msg, node);
                 break;
+
+            case MessageType.ARE_YOU_ALIVE:
+                handle_are_you_alive(node, socket);
         }
+    }
+
+    private static void handle_are_you_alive(ChordNode node, SSLSocket socket) {
+        Message response = new Message(MessageType.I_AM_ALIVE);
+        send_response(node, response, socket);
     }
 
     private static void handle_notify(Message msg, ChordNode node) {

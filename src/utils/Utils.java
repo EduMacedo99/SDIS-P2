@@ -45,21 +45,25 @@ public class Utils {
         return trimmed;
     }
 
-    public static Message requestMessage(ChordNode node, InetSocketAddress destination, int time, Message msg) {
+    public static Message request_message(ChordNode node, InetSocketAddress destination, Message msg) {
 
         Message message = null;
 
         try {
             SSLSocket socket = MessageSender.send_message(msg, destination);
+
+            if (socket == null) {
+                return null;
+            }
             
             //Thread.sleep(250);
-    
+            
             ObjectInputStream input = null;
             
             try {
                 input = new ObjectInputStream(socket.getInputStream());
             } catch (IOException e) {
-                e.printStackTrace();
+                //e.printStackTrace();
             }
 
             message = (Message) input.readObject();
@@ -80,6 +84,7 @@ public class Utils {
     public static void send_message(ChordNode peer, InetSocketAddress destination, Message msg) {
         try {
             SSLSocket socket = MessageSender.send_message(msg, destination);
+            if (socket == null) return;
             socket.close();
         } catch (Exception e1) {
             e1.printStackTrace();

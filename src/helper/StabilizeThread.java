@@ -28,7 +28,11 @@ public class StabilizeThread extends HelperThread{
 
         Message msg = new Message(MessageType.GET_PREDECESSOR, node.get_address());
         
-        Message response = requestMessage(node, successor, 100, msg);
+        Message response = request_message(node, successor, msg);
+
+        if(response == null) {
+            return;
+        }   
 
         String candidate_str = new String(response.get_body());
 

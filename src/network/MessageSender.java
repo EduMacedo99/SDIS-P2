@@ -20,11 +20,14 @@ public class MessageSender {
 
     public static SSLSocket send_message(Message msg, InetSocketAddress server) {
         SSLSocket socket = connect(server);
+        if (socket == null) {
+            return null;
+        }
         try {
             ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
             output.writeObject(msg);
         } catch (IOException e) {
-            e.printStackTrace();
+            //e.printStackTrace();
         }
         return socket;
     }
@@ -36,7 +39,8 @@ public class MessageSender {
         try {
             socket = (SSLSocket) ssl_socket_factory.createSocket(server.getAddress(), server.getPort());
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("Couldn't connect to peer!");
+            return null;
         }
 
         socket.setEnabledCipherSuites(socket.getSupportedCipherSuites());
