@@ -54,7 +54,7 @@ public class MessageReceiver {
                 break;
 
             case MessageType.BACKUP_FILE:
-                System.out.println("TENHO DE FAZER BACKUP");
+                node.get_executor().submit(new Backup(msg, node));
                 break;
             
         }
@@ -131,8 +131,7 @@ public class MessageReceiver {
         String address = pieces[0];
         int port = Integer.parseInt(pieces[1]);
         System.out.println("----------");
-        System.out.println("key: " + msg.get_key());
-        System.out.println("successor: " + address + " " + port);
+        System.out.println("Key: " + msg.get_key() + "  /  Successor: " + address + " " + port);
         
         // Send file
         Path path = node.files_list.get(msg.get_key());

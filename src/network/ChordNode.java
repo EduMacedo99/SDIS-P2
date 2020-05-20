@@ -77,7 +77,7 @@ public class ChordNode implements RMI {
         if (file.mkdirs())
             System.out.println("New directory created: " + path);
         else
-            System.out.println("Directory " + path + "already eists");
+            System.out.println("Directory " + path + " already exists");
     }
 
     /* Setters and getters */
@@ -176,7 +176,7 @@ public class ChordNode implements RMI {
         stabilize_thread.start();
         fixFingers_thread.start();
         predecessor_thread.start();
-        print_thread.start();
+        //print_thread.start();
     }
 
     public void notify_successor() {

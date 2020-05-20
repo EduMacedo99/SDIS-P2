@@ -21,9 +21,8 @@ public class TestApp {
             Registry registry = LocateRegistry.getRegistry(0);
             RMI stub = (RMI) registry.lookup(access_point);
 
-            String filePath;
-            int diskSpaceToReclaim;
-            int replicationDegree;
+            String file_path;
+            int replication_degree;
 
             /* Performing the selected operation */
             switch (args[1]) {
@@ -33,26 +32,25 @@ public class TestApp {
                         return;
                     }
                     System.out.println("Backup is being initiated");
-                    filePath = args[2];
-                    replicationDegree = Integer.parseInt(args[3]);
-
-                    stub.backup(filePath, replicationDegree);
+                    file_path = args[2];
+                    replication_degree = Integer.parseInt(args[3]);
+                    stub.backup(file_path, replication_degree);
                     break;
                 case "RESTORE":
                     if (args.length != 3) {
                         System.out.println("Usage: java TestApp <hostname>/<peer_access_point> RESTORE <file_path>");
                         return;
                     }
-                    filePath = args[2];
-                    stub.restore(filePath);
+                    file_path = args[2];
+                    stub.restore(file_path);
                     break;
                 case "DELETE":
                     if (args.length != 3) {
                         System.out.println("Usage: java TestApp <hostname>/<peer_access_point> DELETE <file_path>");
                         return;
                     }
-                    filePath = args[2];
-                    stub.delete(filePath);
+                    file_path = args[2];
+                    stub.delete(file_path);
                     break;
                 /*case "RECLAIM":
                     if (args.length != 3) {

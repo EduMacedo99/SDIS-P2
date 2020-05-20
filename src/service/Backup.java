@@ -1,5 +1,6 @@
 package src.service;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
@@ -18,40 +19,48 @@ public class Backup implements Runnable {
 
     private static final int GET_FILE_KEY = 0;
     private static final int EXECUTE_BACKUP = 1;
+    private static final String FILES_TO_BACKUP_DIR = "files_to_backup";
 
     private final ChordNode node;
     private final String file_name;
     private final int replication_degree;
     private final int task;
+    private final Message backup_info;
 
     public Backup(ChordNode node, String file_name, int replication_degree) {
         this.task = GET_FILE_KEY;
         this.node = node;
         this.file_name = file_name;
         this.replication_degree = replication_degree;
+        this.backup_info = null;
     }
 
-    @Override
-    public void run() {
+    public Backup(Message msg, ChordNode node) {
+        task = EXECUTE_BACKUP;
+        this.node = node;
+        backup_info = msg;
+        file_name = msg.get_file_name();
+        replication_degree = -1;
+	}
 
+	@Override
+    public void run() {
         switch(task) {
             case GET_FILE_KEY:
                 get_file_key();
                 break;
             case EXECUTE_BACKUP:
-                //backup_file(key, file_name, replication_degree, bFile);
+                backup_file();
                 break;
         }
-        
     }
 
     /**
-     * 
+     * Handles the process of finding the key for the backup file.
      */
     public void get_file_key() {
-        System.out.println("Backup is being initiated");
 
-        String file_path = node.get_files_path() + '/' + file_name;
+        String file_path = FILES_TO_BACKUP_DIR + '/' + file_name;
         Path path = Paths.get(file_path);
 
         // Get file key
@@ -59,7 +68,7 @@ public class Backup implements Runnable {
         try {
             key_file = Key.create_key_file(file_path);
             node.store_file_key(key_file.key, path);
-            System.err.println("Key File: " + key_file.key);
+            System.out.println("Key File: " + key_file.key);
         } catch (NoSuchAlgorithmException | IOException e) {
             System.err.println("Something went wrong while hashing the file key!\n");
             return;
@@ -77,11 +86,10 @@ public class Backup implements Runnable {
      * Sends the file to the node that needs to store it.
      */
     public static void send_file(ChordNode sender_node, Key key_file, Path path, InetSocketAddress destination) {
-        System.out.println("key: " + key_file);
-        System.out.println("successor: " + destination);
+        System.out.println("Key: " + key_file + "  /  Successor: " + destination);
 
         if(path != null) {
-            Message msg = new Message(MessageType.BACKUP_FILE, sender_node.get_address(), sender_node.get_address(), key_file);
+            Message msg = new Message(MessageType.BACKUP_FILE, sender_node.get_address(), sender_node.get_address(), key_file, path.getFileName().toString());
 
             byte[] bFile = null;
 
@@ -89,7 +97,7 @@ public class Backup implements Runnable {
             try {
                 bFile = Files.readAllBytes(path);
             } catch (IOException ex) {
-                System.err.println("The file you want to backup was not found\n");
+                System.err.println("The file you want to backup was not found!\n");
                 return;
             }
 
@@ -101,14 +109,21 @@ public class Backup implements Runnable {
     /**
      * Store file in the node via Java.nio.
      */
-	public void backup_file(long key, String file_name, long replication_degree, byte[] bFile) {
+	public void backup_file() {
 
-        //create file
+        // Create file
+        File file = new File(node.get_files_path() + '/' + file_name);
+        file.getParentFile().mkdirs();
+        try {
+            file.createNewFile();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
-        //write to file
+        // Write to file
         Path path = Paths.get(node.get_files_path() + '/' + file_name);
         try {
-            Files.write(path, bFile);
+            Files.write(path, backup_info.get_body());
         } catch(IOException ex){
             ex.printStackTrace();
         }
