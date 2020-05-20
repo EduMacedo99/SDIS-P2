@@ -46,7 +46,7 @@ public class StabilizeThread extends HelperThread{
         Key successor_key = Key.create_key_from_address(successor);
         Key candidate_key = Key.create_key_from_address(candidate);
 
-        if (node.betweenKeys(node.get_local_key().key, candidate_key.key, successor_key.key) || node.get_local_address().equals(successor)) {
+        if (Key.betweenKeys(node.get_local_key().key, candidate_key.key, successor_key.key) || node.get_local_address().equals(successor)) {
             node.update_successor(candidate);
         }
        

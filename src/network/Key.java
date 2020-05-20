@@ -71,4 +71,12 @@ public class Key implements Serializable{
        
     }
 
+    public static boolean betweenKeys(final long key0, final long key, final long key1) {
+        // if key is between the two keys in the ring: ... key0 -> key -> key1 ...
+        if ((key0 < key && key <= key1) || ((key0 >= key1) && (key0 < key || key <= key1))){
+            return true;
+        }
+        return false;
+    } 
+
 }

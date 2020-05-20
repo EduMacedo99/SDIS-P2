@@ -3,24 +3,21 @@ package src.network;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Stream;
 
 import static src.utils.Utils.*;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.NoSuchAlgorithmException;
 
 import src.helper.FixFingersThread;
 import src.helper.PredecessorThread;
 import src.helper.PrintThread;
 import src.helper.StabilizeThread;
+import src.service.Backup;
 import src.utils.MessageType;
 
 public class ChordNode implements RMI {
@@ -28,58 +25,54 @@ public class ChordNode implements RMI {
     private final Server server;
     private final Key local_key;
     private final InetSocketAddress local_address;
-    private InetSocketAddress predecessor;
-    public HashMap<Integer, InetSocketAddress> finger_table;
     private final ExecutorService executor;
-
+    
     private final StabilizeThread stabilize_thread;
     private final FixFingersThread fixFingers_thread;
     private final PredecessorThread predecessor_thread;
     private final PrintThread print_thread;
+    
+    private InetSocketAddress predecessor;
+    private HashMap<Integer, InetSocketAddress> finger_table;
+    private String files_path;
 
-    protected String filesPath;
-    protected String chunkPath;
-
-    public HashMap<Long, Path> files_list  = new HashMap<Long, Path>();
+    public HashMap<Long, Path> files_list = new HashMap<Long, Path>();
 
     public ChordNode(final InetSocketAddress local_address) {
-        // initialize local address
+        // Initialize local address
         this.local_address = local_address;
 
-        // initialize local key
+        // Initialize local key
         local_key = Key.create_key_from_address(local_address);
         System.out.println("Key: " + local_key);
 
-        // initialize finger table
+        // Initialize finger table
         finger_table = new HashMap<Integer, InetSocketAddress>();
         for (int i = 1; i <= KEY_SIZE; i++) {
             update_ith_finger(i, null);
         }
 
-        // initialize predecessor
+        // Initialize predecessor
         predecessor = null;
 
-        // initialize helper threads
+        // Initialize helper threads
         executor = Executors.newFixedThreadPool(250);
         stabilize_thread = new StabilizeThread(this, 3000);
         fixFingers_thread = new FixFingersThread(this, 3000);
         predecessor_thread = new PredecessorThread(this, 3000);
-        // provisory
+        // Provisory
         print_thread = new PrintThread(this, 3000);
 
-        // start server
+        // Start server
         server = new Server(this, local_address.getPort());
         server.start();
 
-        filesPath = "peers/" + local_key.key + "/files";
-        chunkPath = "peers/" + local_key.key + "/chunks";
+        files_path = "peers/" + local_key.key + "/files";
 
-        createDirectory(filesPath);
-        createDirectory(chunkPath);
-
+        create_directory(files_path);
     }
 
-    private void createDirectory(String path) {
+    private void create_directory(String path) {
         File file = new File(path);
         if (file.mkdirs())
             System.out.println("New directory created: " + path);
@@ -88,6 +81,7 @@ public class ChordNode implements RMI {
     }
 
     /* Setters and getters */
+
     public String get_address() {
         return address_to_string(local_address);
     }
@@ -120,53 +114,14 @@ public class ChordNode implements RMI {
         return local_key;
     }
 
+    public String get_files_path() {
+        return files_path;
+    }
+
     /* Service Interface */
 
-    public void backup(final String fileName, final int replication_degree) {
-        System.out.println("Backup is being initiated");
-
-        String filePath = this.filesPath + '/' + fileName;
-        Path path = Paths.get(filePath);
-
-        // get file key
-        Key key_file = null;
-        try {
-            key_file = Key.create_key_file(filePath);
-            files_list.put(key_file.key, path);
-            System.err.println("Key File: " + key_file.key);
-        } catch (NoSuchAlgorithmException | IOException e) {
-            System.err.println("Something went wrong while hashing the file key\n");
-            return;
-        }
-
-
-        //send to successor of file key
-        Message find_succ_msg = new Message(MessageType.FIND_BACKUP_NODE, get_address(), get_address(), key_file);
-        InetSocketAddress successor = find_successor_addr(key_file.key, find_succ_msg);
-        if (successor != null) {
-            System.out.println("key: " + key_file);
-            System.out.println("successor!null: " + successor);
-
-            if(path != null){
-                Message msg = new Message(MessageType.BACKUP_FILE, get_address(), get_address(), key_file);
-
-                byte[] bFile = null;
-
-                // get file bytes via Java.nio
-                try {
-                    bFile = Files.readAllBytes(path);
-                } catch (IOException ex) {
-                    System.err.println("The file you want to backup was not found\n");
-                    return;
-                }
-
-                msg.set_body(bFile);
-                send_message(this, successor , msg);
-            }
-        }
-        
-
-
+    public void backup(final String file_name, final int replication_degree) {
+        executor.submit(new Backup(this, file_name, replication_degree));
     }
 
     public void restore(final String filepath) {
@@ -207,24 +162,22 @@ public class ChordNode implements RMI {
 
         } else {
             // Node is joining an existing circle   <TYPE> <SENDER_ID> <PEER_REQUESTING> <KEY>
-
             final Message msg = new Message(MessageType.FIND_SUCCESSOR_KEY, get_address(), get_address(), local_key);
-
             send_message(this, contact, msg);
 
         }
-
         return true;
     }
 
+    /**
+     * Puts the auxiliary Chord threads to run.
+     */
     public void start_helper_threads() {
         stabilize_thread.start();
         fixFingers_thread.start();
         predecessor_thread.start();
         print_thread.start();
     }
-    
-    /****************************** STABILIZE THREAD *******************************/
 
     public void notify_successor() {
         Message msg = new Message(MessageType.NOTIFY, get_address());
@@ -232,7 +185,7 @@ public class ChordNode implements RMI {
     }
     
     /**
-     * possible_predecessor thinks it might be your predecessor.
+     * Updates predecessor after being notified.
      */ 
     public void notified(final InetSocketAddress possible_predecessor) {
 
@@ -242,35 +195,24 @@ public class ChordNode implements RMI {
         }
         final Key predecessor_key = Key.create_key_from_address(get_predecessor());
         final Key possible_predecessor_key = Key.create_key_from_address(possible_predecessor);
-        if(betweenKeys(predecessor_key.key, possible_predecessor_key.key, local_key.key)){
+        if(Key.betweenKeys(predecessor_key.key, possible_predecessor_key.key, local_key.key)){
             predecessor = possible_predecessor;
             return;
         }
     }
 
-    /****************************** FIX FINGERS THREAD ******************************/
-
-    public boolean betweenKeys(final long key0, final long key, final long key1) {
-        // if key is between the two keys in the ring: ... key0 -> key -> key1 ...
-        if ((key0 < key && key <= key1) || ((key0 >= key1) && (key0 < key || key <= key1))){
-            return true;
-        }
-        return false;
-    } 
-
     /**
-     * Finds the successor of key
+     * Finds the successor of key.
      */
 	public InetSocketAddress find_successor_addr(final long key, final Message message) {
 
         final Key successor_key = Key.create_key_from_address(get_successor());
 
-        //if key ∈ ]this_node_key, successor_key] then
-        if(betweenKeys(this.local_key.key, key, successor_key.key )) {
+        // If key ∈ ]this_node_key, successor_key] then
+        if(Key.betweenKeys(this.local_key.key, key, successor_key.key )) {
             return get_successor();
-        }
-
-        else { // forward the query around the circle
+        } else { 
+            // Forward the query around the circle
             final InetSocketAddress n0_addr = closest_preceding_node_addr(key);
             if(n0_addr.equals(local_address))
                 return local_address;
@@ -290,30 +232,15 @@ public class ChordNode implements RMI {
             if(finger_table.get(i) != null){
                 final Key finger_i_key = Key.create_key_from_address(finger_table.get(i));
             
-                //if finger[i] ∈ ]this_node_key, key] then
-                if(betweenKeys(this.local_key.key, finger_i_key.key, key))
+                // If finger[i] ∈ ]this_node_key, key] then
+                if(Key.betweenKeys(this.local_key.key, finger_i_key.key, key))
                     return finger_table.get(i);
             }
         }
         return local_address;
     }
-
-
-    /**
-     * Store file in the node via Java.nio
-     */
-	public void backupFile(long key, String file_name, long replication_degree, byte[] bFile) {
-
-        //create file
-
-        //write to file
-        Path path = Paths.get(this.filesPath + '/' + file_name);
-        try{
-            Files.write(path, bFile);
-
-        }catch(IOException ex){
-            ex.printStackTrace();
-        }
-
-	}
+    
+    public void store_file_key(Long file_key, Path file_path) {
+        files_list.put(file_key, file_path);
+    }
 }
