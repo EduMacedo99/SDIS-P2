@@ -65,6 +65,10 @@ public class MessageReceiver {
             case MessageType.RETRIEVE_FILE:
                 node.get_executor().submit(new Restore(msg, node));
                 break;
+
+            case MessageType.DELETE_FILE:
+                handle_delete_file(msg, node);
+                break;
         }
     }
 
@@ -153,6 +157,13 @@ public class MessageReceiver {
         InetSocketAddress peer_requesting = msg.get_peer_requesting();
         msg = new Message(MessageType.RESTORE_FILE, node.get_address(), address_to_string(peer_requesting), new Key(key));
         node.send_restore_msg(key, msg);
+    }
+
+    private static void handle_delete_file(Message msg, ChordNode node) {
+        long key = msg.get_key();
+        InetSocketAddress peer_requesting = msg.get_peer_requesting();
+        msg = new Message(MessageType.DELETE_FILE, node.get_address(), address_to_string(peer_requesting), new Key(key));
+        node.send_delete_msg(key, msg);
     }
 
 }

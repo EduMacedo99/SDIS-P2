@@ -13,6 +13,7 @@ import src.helper.PredecessorThread;
 import src.helper.PrintThread;
 import src.helper.StabilizeThread;
 import src.service.Backup;
+import src.service.Delete;
 import src.service.Restore;
 
 import static src.utils.Utils.*;
@@ -131,6 +132,8 @@ public class ChordNode implements RMI {
 
     public void delete(final String filepath) {
         System.out.println("Delete is being initiated");
+        executor.submit(new Delete(this, filepath));
+
     }
 
     /* Chord related methods */
@@ -244,6 +247,14 @@ public class ChordNode implements RMI {
     public void store_file_key(Long file_key, Path file_path) {
         files_list.put(file_key, file_path);
     }
+    
+    public void deleteFile_files_list(long key) {
+        files_list.remove(key);
+    }
+
+    public Path getFilePath(long key) {
+        return files_list.get(key);
+    }
 
     public void store_files_backed_up_key(Long file_key, String file_path) {
         files_backed_up.put(file_key, file_path);
@@ -257,8 +268,8 @@ public class ChordNode implements RMI {
         return files_backed_up.get(key);
     }
     
-    public Path getFilePath(long key) {
-        return files_list.get(key);
+    public void deleteFile_files_backed_up(long key) {
+        files_backed_up.remove(key);
     }
 
     /**
@@ -288,6 +299,24 @@ public class ChordNode implements RMI {
             }
             send_message(this, n0_addr, message);
         }
+
+	}
+
+    /**
+     * Forward the query around the circle for the nodes to delete the given file
+     */
+	public void send_delete_msg(long key, Message message) {
+
+        if(has_file(key)){
+            System.out.println("Deleting file with key " + key + " ... ");
+            get_executor().submit(new Delete(this, key, message));
+        }
+        
+        if(!message.get_peer_requesting().equals(get_local_address()))
+            send_message(this, get_successor(), message);
+        
+        else
+            System.out.println("No more nodes to delete the file");
 
 	}
 

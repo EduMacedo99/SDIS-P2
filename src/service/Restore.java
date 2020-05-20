@@ -90,7 +90,6 @@ public class Restore implements Runnable {
             return;
         }
 
-        // Send to successor of file key or others peers that have the file too before
         Message find_succ_msg = new Message(MessageType.RESTORE_FILE, node.get_address(), node.get_address(), key_file);
         node.send_restore_msg(key_file.key, find_succ_msg);
         
@@ -115,6 +114,7 @@ public class Restore implements Runnable {
                 bFile = Files.readAllBytes(path);
             } catch (IOException ex) {
                 System.err.println("The file you want to restore was not found!\n");
+                //TODO caso este node fizer reclaim 0, já não vai conter o file e é necessário procurar nos nodes seguintes ?? (por causa do replication degree)
                 return;
             }
 
