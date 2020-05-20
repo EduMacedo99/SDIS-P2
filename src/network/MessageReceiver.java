@@ -8,6 +8,8 @@ import java.nio.file.Path;
 import javax.net.ssl.SSLSocket;
 
 import static src.utils.Utils.*;
+
+import src.service.Backup;
 import src.utils.MessageType;
 
 public class MessageReceiver {
@@ -112,7 +114,6 @@ public class MessageReceiver {
         node.update_ith_finger(ith_finger, string_to_address(new String(msg.get_body())));
     }
 
-
     private static void handle_find_backup_node(Message msg, ChordNode node) {
         long key = msg.get_key();
         InetSocketAddress peer_requesting = msg.get_peer_requesting();
@@ -125,7 +126,6 @@ public class MessageReceiver {
         }
     }
     
-
     private static void handle_found_backup_node(Message msg, ChordNode node) {
         String[] pieces = new String(msg.get_body()).split(":");
         String address = pieces[0];
@@ -134,24 +134,10 @@ public class MessageReceiver {
         System.out.println("key: " + msg.get_key());
         System.out.println("successor: " + address + " " + port);
         
-        //MANDAR FILE
+        // Send file
         Path path = node.files_list.get(msg.get_key());
         if(path != null){
-            msg = new Message(MessageType.BACKUP_FILE, node.get_address(), node.get_address(), new Key(msg.get_key()));
-
-            byte[] bFile = null;
-
-            // get file bytes via Java.nio
-            try {
-                bFile = Files.readAllBytes(path);
-            } catch (IOException ex) {
-                System.err.println("The file you want to backup was not found\n");
-                return;
-            }
-
-            msg.set_body(bFile);
-            send_message(node, new InetSocketAddress(address, port) , msg);
+            Backup.send_file(node, new Key(msg.get_key()), path, new InetSocketAddress(address, port));
         }
-
     }
 }

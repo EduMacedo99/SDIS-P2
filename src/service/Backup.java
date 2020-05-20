@@ -69,25 +69,32 @@ public class Backup implements Runnable {
         Message find_succ_msg = new Message(MessageType.FIND_BACKUP_NODE, node.get_address(), node.get_address(), key_file);
         InetSocketAddress successor = node.find_successor_addr(key_file.key, find_succ_msg);
         if (successor != null) {
-            System.out.println("key: " + key_file);
-            System.out.println("successor: " + successor);
+            send_file(node, key_file, path, successor);
+        }
+    }
 
-            if(path != null) {
-                Message msg = new Message(MessageType.BACKUP_FILE, node.get_address(), node.get_address(), key_file);
+    /**
+     * Sends the file to the node that needs to store it.
+     */
+    public static void send_file(ChordNode sender_node, Key key_file, Path path, InetSocketAddress destination) {
+        System.out.println("key: " + key_file);
+        System.out.println("successor: " + destination);
 
-                byte[] bFile = null;
+        if(path != null) {
+            Message msg = new Message(MessageType.BACKUP_FILE, sender_node.get_address(), sender_node.get_address(), key_file);
 
-                // Get file bytes via Java.nio
-                try {
-                    bFile = Files.readAllBytes(path);
-                } catch (IOException ex) {
-                    System.err.println("The file you want to backup was not found\n");
-                    return;
-                }
+            byte[] bFile = null;
 
-                msg.set_body(bFile);
-                send_message(node, successor , msg);
+            // Get file bytes via Java.nio
+            try {
+                bFile = Files.readAllBytes(path);
+            } catch (IOException ex) {
+                System.err.println("The file you want to backup was not found\n");
+                return;
             }
+
+            msg.set_body(bFile);
+            send_message(sender_node, destination , msg);
         }
     }
 
