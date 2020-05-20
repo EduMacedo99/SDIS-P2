@@ -11,6 +11,7 @@ src\network\MessageSender.java
 src\network\RMI.java
 src\network\Server.java
 src\service\Backup.java
+src\service\Restore.java
 src\service\Peer.java
 src\service\TestApp.java
 src\utils\MessageType.java

@@ -12,7 +12,7 @@ public class TestApp {
     public static void main(String[] args) {
         try {
             if (args.length < 2 || args.length > 4) {
-                System.out.println("USAGE: java TestApp <> <hostname>/<peer_access_point> <sub_protocol> <opnd_1> <opnd_2>");
+                System.out.println("USAGE: java TestApp <hostname>/<peer_access_point> <sub_protocol> <opnd_1> <opnd_2>");
                 return;
             }
 
@@ -41,6 +41,7 @@ public class TestApp {
                         System.out.println("Usage: java TestApp <hostname>/<peer_access_point> RESTORE <file_path>");
                         return;
                     }
+                    System.out.println("Restore is being initiated");
                     file_path = args[2];
                     stub.restore(file_path);
                     break;

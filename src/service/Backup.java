@@ -26,6 +26,7 @@ public class Backup implements Runnable {
     private final int replication_degree;
     private final int task;
     private final Message backup_info;
+    private Long key;
 
     public Backup(ChordNode node, String file_name, int replication_degree) {
         this.task = GET_FILE_KEY;
@@ -41,6 +42,7 @@ public class Backup implements Runnable {
         backup_info = msg;
         file_name = msg.get_file_name();
         replication_degree = -1;
+        this.key =  msg.get_key();
 	}
 
 	@Override
@@ -127,6 +129,8 @@ public class Backup implements Runnable {
         } catch(IOException ex){
             ex.printStackTrace();
         }
+
+        node.store_files_backed_up_key(key, file_name);
 
     }
 }

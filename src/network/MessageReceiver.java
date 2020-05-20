@@ -10,6 +10,7 @@ import javax.net.ssl.SSLSocket;
 import static src.utils.Utils.*;
 
 import src.service.Backup;
+import src.service.Restore;
 import src.utils.MessageType;
 
 public class MessageReceiver {
@@ -56,7 +57,14 @@ public class MessageReceiver {
             case MessageType.BACKUP_FILE:
                 node.get_executor().submit(new Backup(msg, node));
                 break;
-            
+                
+            case MessageType.RESTORE_FILE:
+                handle_restore_file(msg, node);
+                break;
+
+            case MessageType.RETRIEVE_FILE:
+                node.get_executor().submit(new Restore(msg, node));
+                break;
         }
     }
 
@@ -139,4 +147,12 @@ public class MessageReceiver {
             Backup.send_file(node, new Key(msg.get_key()), path, new InetSocketAddress(address, port));
         }
     }
+
+    private static void handle_restore_file(Message msg, ChordNode node) {
+        long key = msg.get_key();
+        InetSocketAddress peer_requesting = msg.get_peer_requesting();
+        msg = new Message(MessageType.RESTORE_FILE, node.get_address(), address_to_string(peer_requesting), new Key(key));
+        node.send_restore_msg(key, msg);
+    }
+
 }

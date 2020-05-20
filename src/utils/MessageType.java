@@ -18,5 +18,9 @@ public class MessageType {
     public static final String FIND_BACKUP_NODE = "FIND_BACKUP_NODE";
     public static final String FOUND_BACKUP_NODE = "FOUND_BACKUP_NODE";
 
-	public static final String BACKUP_FILE = "BACKUP_FILE";
+    public static final String BACKUP_FILE = "BACKUP_FILE";
+    
+    public static final String RESTORE_FILE = "RESTORE_FILE";
+    public static final String RETRIEVE_FILE = "RETRIEVE_FILE";
+
 }

@@ -1,23 +1,21 @@
 package src.network;
 
-import java.io.File;
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static src.utils.Utils.*;
-
-import java.nio.file.Files;
+import java.io.File;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import src.helper.FixFingersThread;
 import src.helper.PredecessorThread;
 import src.helper.PrintThread;
 import src.helper.StabilizeThread;
 import src.service.Backup;
+import src.service.Restore;
+
+import static src.utils.Utils.*;
 import src.utils.MessageType;
 
 public class ChordNode implements RMI {
@@ -37,6 +35,7 @@ public class ChordNode implements RMI {
     private String files_path;
 
     public HashMap<Long, Path> files_list = new HashMap<Long, Path>();
+    public HashMap<Long, String> files_backed_up = new HashMap<Long, String>();
 
     public ChordNode(final InetSocketAddress local_address) {
         // Initialize local address
@@ -70,6 +69,7 @@ public class ChordNode implements RMI {
         files_path = "peers/" + local_key.key + "/files";
 
         create_directory(files_path);
+        create_directory("peers/" + local_key.key + "/restore");
     }
 
     private void create_directory(String path) {
@@ -126,6 +126,7 @@ public class ChordNode implements RMI {
 
     public void restore(final String filepath) {
         System.out.println("Restore is being initiated");
+        executor.submit(new Restore(this, filepath));
     }
 
     public void delete(final String filepath) {
@@ -243,4 +244,51 @@ public class ChordNode implements RMI {
     public void store_file_key(Long file_key, Path file_path) {
         files_list.put(file_key, file_path);
     }
+
+    public void store_files_backed_up_key(Long file_key, String file_path) {
+        files_backed_up.put(file_key, file_path);
+    }
+
+	public boolean has_file(long key) {
+        return files_backed_up.containsKey(key);
+    }
+
+    public String getFileName(long key) {
+        return files_backed_up.get(key);
+    }
+    
+    public Path getFilePath(long key) {
+        return files_list.get(key);
+    }
+
+    /**
+     * Tries to reach the node that is suposed to have the file (the successor of key file).
+     * If the node has the file sends the restore file.
+     * If along the way it finds a node with the same file (due to the replication degree) it also sends the restore file and ends the search.
+     */
+	public void send_restore_msg(final long key, final Message message) {
+
+        if(has_file(key)){
+            get_executor().submit(new Restore(this, key, message));
+            return;
+        }
+
+        final Key successor_key = Key.create_key_from_address(get_successor());
+
+        // If key ∈ ]this_node_key, successor_key] then
+        if(Key.betweenKeys(this.local_key.key, key, successor_key.key )) {
+            send_message(this, get_successor(), message);
+
+        } else { 
+            // Forward the query around the circle
+            final InetSocketAddress n0_addr = closest_preceding_node_addr(key);
+            if(n0_addr.equals(local_address)){
+                System.out.println("Node successor of file key does not have the file!!");
+                return;
+            }
+            send_message(this, n0_addr, message);
+        }
+
+	}
+
 }
