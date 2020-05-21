@@ -65,13 +65,13 @@ public class Delete implements Runnable {
     public void get_file_key() {
 
         String file_path = FILES_TO_BACKUP_DIR + '/' + file_name;
-        Path path = Paths.get(file_path);
+        //Path path = Paths.get(file_path);
 
         // Get file key
         Key key_file = null;
         try {
             key_file = Key.create_key_file(file_path);
-            node.store_file_key(key_file.key, path);
+            //node.store_file_key(key_file.key, path);
             System.out.println("Key File: " + key_file.key);
         } catch (NoSuchAlgorithmException | IOException e) {
             System.err.println("Something went wrong while hashing the file key!\n");
@@ -90,7 +90,7 @@ public class Delete implements Runnable {
      */
 	public void delete_file() {
 
-        String file_path = node.get_files_path() + '/' + node.getFileName(key);
+        String file_path = node.get_files_path() + '/' + node.get_file_name(key);
         Path path = Paths.get(file_path);
 
         if(path != null) {

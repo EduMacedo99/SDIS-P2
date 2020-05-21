@@ -17,6 +17,8 @@ import src.service.Delete;
 import src.service.Restore;
 
 import static src.utils.Utils.*;
+
+import src.utils.FileInfo;
 import src.utils.MessageType;
 
 public class ChordNode implements RMI {
@@ -35,8 +37,9 @@ public class ChordNode implements RMI {
     private HashMap<Integer, InetSocketAddress> finger_table;
     private String files_path;
 
-    public HashMap<Long, Path> files_list = new HashMap<Long, Path>();
-    public HashMap<Long, String> files_backed_up = new HashMap<Long, String>();
+    private HashMap<Long, FileInfo> files_list = new HashMap<Long, FileInfo>();
+    private HashMap<Long, String> files_backed_up = new HashMap<Long, String>();
+    private HashMap<Long, Path> files_restored = new HashMap<Long, Path>();
 
     public ChordNode(final InetSocketAddress local_address) {
         // Initialize local address
@@ -133,13 +136,12 @@ public class ChordNode implements RMI {
     public void delete(final String filepath) {
         System.out.println("Delete is being initiated");
         executor.submit(new Delete(this, filepath));
-
     }
 
     /* Chord related methods */
 
     public void update_ith_finger(final int key, final InetSocketAddress value) {
-        //join circle recently
+        // Join circle recently
         if(get_successor() == null && key == -1)
             finger_table.put(1, value);
         else
@@ -244,16 +246,37 @@ public class ChordNode implements RMI {
         return local_address;
     }
     
-    public void store_file_key(Long file_key, Path file_path) {
-        files_list.put(file_key, file_path);
+    public void store_file_key(Long file_key, Path file_path, int replication_degree) {
+        FileInfo file_info = new FileInfo(file_path, replication_degree);
+        files_list.put(file_key, file_info);
+    }
+
+    public void store_restore_file(Long file_key, Path file_path) {
+        files_restored.put(file_key, file_path);
     }
     
     public void deleteFile_files_list(long key) {
         files_list.remove(key);
     }
 
-    public Path getFilePath(long key) {
-        return files_list.get(key);
+    public void delete_restore_file(long key) {
+        files_restored.remove(key);
+    }
+
+    public Path get_file_path(long key) {
+        FileInfo fi;
+        if ((fi = files_list.get(key)) == null) {
+            return null;
+        }
+        return fi.path;
+    }
+
+    public int get_file_rep_degree(long key) {
+        return files_list.get(key).replication_degree;
+    }
+
+    public Path get_restore_file_path(long key) {
+        return files_restored.get(key);
     }
 
     public void store_files_backed_up_key(Long file_key, String file_path) {
@@ -264,7 +287,7 @@ public class ChordNode implements RMI {
         return files_backed_up.containsKey(key);
     }
 
-    public String getFileName(long key) {
+    public String get_file_name(long key) {
         return files_backed_up.get(key);
     }
     

@@ -83,7 +83,7 @@ public class Restore implements Runnable {
         Key key_file = null;
         try {
             key_file = Key.create_key_file(file_path);
-            node.store_file_key(key_file.key, path);
+            node.store_restore_file(key_file.key, path);
             System.out.println("Key File: " + key_file.key);
         } catch (NoSuchAlgorithmException | IOException e) {
             System.err.println("Something went wrong while hashing the file key!\n");
@@ -101,7 +101,7 @@ public class Restore implements Runnable {
      */
 	public void restore_file() {
 
-        String file_path = node.get_files_path() + '/' + node.getFileName(key);
+        String file_path = node.get_files_path() + '/' + node.get_file_name(key);
         Path path = Paths.get(file_path);
 
         if(path != null) {
@@ -125,11 +125,11 @@ public class Restore implements Runnable {
     }
 
     /**
-     * Store file in the restore directory via Java.nio.
+     * Stores file in the restore directory via Java.nio.
      */
 	public void save_file() {
         key = msg.get_key();
-        String path_ini =  node.getFilePath(key).toString();
+        String path_ini = node.get_restore_file_path(key).toString();
         file_name = path_ini.split(Pattern.quote("\\"))[1];
         
         // Create file
@@ -149,5 +149,6 @@ public class Restore implements Runnable {
             ex.printStackTrace();
         }
 
+        node.delete_restore_file(key);
     }
 }

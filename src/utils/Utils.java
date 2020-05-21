@@ -66,7 +66,11 @@ public class Utils {
                 //e.printStackTrace();
             }
 
-            message = (Message) input.readObject();
+            try {
+                message = (Message) input.readObject();
+            } catch (Exception e) {
+                return null;
+            }
 
             socket.close();
 

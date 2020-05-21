@@ -55,7 +55,7 @@ public class MessageReceiver {
                 break;
 
             case MessageType.BACKUP_FILE:
-                node.get_executor().submit(new Backup(msg, node));
+                node.get_executor().submit(new Backup(node, msg));
                 break;
                 
             case MessageType.RESTORE_FILE:
@@ -146,7 +146,7 @@ public class MessageReceiver {
         System.out.println("Key: " + msg.get_key() + "  /  Successor: " + address + " " + port);
         
         // Send file
-        Path path = node.files_list.get(msg.get_key());
+        Path path = node.get_file_path(msg.get_key());
         if(path != null){
             Backup.send_file(node, new Key(msg.get_key()), path, new InetSocketAddress(address, port));
         }

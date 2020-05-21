@@ -36,7 +36,7 @@ public class Backup implements Runnable {
         this.backup_info = null;
     }
 
-    public Backup(Message msg, ChordNode node) {
+    public Backup(ChordNode node, Message msg) {
         task = EXECUTE_BACKUP;
         this.node = node;
         backup_info = msg;
@@ -69,7 +69,7 @@ public class Backup implements Runnable {
         Key key_file = null;
         try {
             key_file = Key.create_key_file(file_path);
-            node.store_file_key(key_file.key, path);
+            node.store_file_key(key_file.key, path, replication_degree);
             System.out.println("Key File: " + key_file.key);
         } catch (NoSuchAlgorithmException | IOException e) {
             System.err.println("Something went wrong while hashing the file key!\n");
@@ -91,7 +91,8 @@ public class Backup implements Runnable {
         System.out.println("Key: " + key_file + "  /  Successor: " + destination);
 
         if(path != null) {
-            Message msg = new Message(MessageType.BACKUP_FILE, sender_node.get_address(), sender_node.get_address(), key_file, path.getFileName().toString());
+            Message msg = new Message(MessageType.BACKUP_FILE, sender_node.get_address(), sender_node.get_address(), 
+                key_file, path.getFileName().toString(), sender_node.get_file_rep_degree(key_file.key));
 
             byte[] bFile = null;
 
@@ -113,6 +114,32 @@ public class Backup implements Runnable {
      */
 	public void backup_file() {
 
+        System.out.println("Replication degree = " + backup_info.get_replication_degree());
+
+        boolean initiator = false;
+        int new_rep_degree = backup_info.get_replication_degree() - 1;
+        System.out.println("Aqui3");
+
+        if(node.get_file_path(key) != null) {
+            System.out.println("Initiator");
+            initiator = true;
+            new_rep_degree++;
+        }
+        System.out.println("Aqui4");
+
+        if(backup_info.get_replication_degree() > 1) {
+            System.out.println("Message to successor");
+            Message msg = new Message(MessageType.BACKUP_FILE, node.get_address(), node.get_address(), 
+                new Key(key), file_name, new_rep_degree);
+            msg.set_body(backup_info.get_body());
+            send_message(node, node.get_successor(), msg);
+        }
+
+        System.out.println("Aqui2");
+
+        if(initiator) return;
+
+        System.out.println("Storing file");
         // Create file
         File file = new File(node.get_files_path() + '/' + file_name);
         file.getParentFile().mkdirs();

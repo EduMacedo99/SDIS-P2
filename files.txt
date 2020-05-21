@@ -16,3 +16,4 @@ src\service\Peer.java
 src\service\TestApp.java
 src\utils\MessageType.java
 src\utils\Utils.java
+src\utils\FileInfo.java

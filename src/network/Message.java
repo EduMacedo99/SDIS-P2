@@ -53,10 +53,10 @@ public class Message implements Serializable{
         this.body = "".getBytes();
     }
 
-    public Message(String type, String sender_address, String peer_requesting_address, Key key, String file_name) {
+    public Message(String type, String sender_address, String peer_requesting_address, Key key, String file_name, int replication_degree) {
         this.type = type;
         this.sender_address = sender_address;
-        this.header = type + " " + sender_address + " " + peer_requesting_address + " " + key + " " + file_name;
+        this.header = type + " " + sender_address + " " + peer_requesting_address + " " + key + " " + file_name + " " + replication_degree;
         this.body = "".getBytes();
     }
 
@@ -67,12 +67,12 @@ public class Message implements Serializable{
         this.body = "".getBytes();
     }
 
-    public Message(String type, String sender_address, String peer_requesting_address, byte[] bFile, Key key, String file_name, int replication_degree) {
+    /* public Message(String type, String sender_address, String peer_requesting_address, byte[] bFile, Key key, String file_name, int replication_degree) {
         this.type = type;
         this.sender_address = sender_address;
         this.header = type + " " + sender_address + " " + peer_requesting_address + " " + key + " " + file_name + " " + replication_degree;
         this.body = bFile;
-	}
+	} */
 
 	public void set_body(byte[] body) {
         this.body = body;
@@ -133,7 +133,7 @@ public class Message implements Serializable{
         return header.split(" ")[4];
     }
 
-    public long get_replication_degree() {
-        return Long.parseLong(header.split(" ")[5]);
+    public int get_replication_degree() {
+        return Integer.parseInt(header.split(" ")[5]);
     }
 }
