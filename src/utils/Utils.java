@@ -16,6 +16,7 @@ import src.network.MessageSender;
 public class Utils {
     public static final int KEY_SIZE = 5;
     public static final String CRLF = "\r\n\r\n";
+    public static final String FILES_TO_BACKUP_DIR = "files_to_backup";
     private static ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);    
 
     public static String hash(byte[] data) {

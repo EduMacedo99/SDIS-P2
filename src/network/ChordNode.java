@@ -125,6 +125,7 @@ public class ChordNode implements RMI {
     /* Service Interface */
 
     public void backup(final String file_name, final int replication_degree) {
+        System.out.println("Backup is being initiated");
         executor.submit(new Backup(this, file_name, replication_degree));
     }
 
@@ -245,6 +246,11 @@ public class ChordNode implements RMI {
         }
         return local_address;
     }
+
+    public boolean is_responsible_for_key(long key) {
+        Key predecessor_key = Key.create_key_from_address(get_predecessor());
+        return Key.betweenKeys(predecessor_key.key, key, local_key.key);
+    }
     
     public void store_file_key(Long file_key, Path file_path, int replication_degree) {
         FileInfo file_info = new FileInfo(file_path, replication_degree);
@@ -324,23 +330,4 @@ public class ChordNode implements RMI {
         }
 
 	}
-
-    /**
-     * Forward the query around the circle for the nodes to delete the given file
-     */
-	public void send_delete_msg(long key, Message message) {
-
-        if(has_file(key)){
-            System.out.println("Deleting file with key " + key + " ... ");
-            get_executor().submit(new Delete(this, key, message));
-        }
-        
-        if(!message.get_peer_requesting().equals(get_local_address()))
-            send_message(this, get_successor(), message);
-        
-        else
-            System.out.println("No more nodes to delete the file");
-
-	}
-
 }

@@ -7,9 +7,12 @@ import java.nio.file.Path;
 
 import javax.net.ssl.SSLSocket;
 
+import javafx.scene.Node;
+
 import static src.utils.Utils.*;
 
 import src.service.Backup;
+import src.service.Delete;
 import src.service.Restore;
 import src.utils.MessageType;
 
@@ -66,8 +69,12 @@ public class MessageReceiver {
                 node.get_executor().submit(new Restore(msg, node));
                 break;
 
+            case MessageType.FIND_DELETE_FILE_NODE:
+                handle_find_delete_file_node(msg, node);
+                break;
+
             case MessageType.DELETE_FILE:
-                handle_delete_file(msg, node);
+                node.get_executor().submit(new Delete(node, msg.get_key()));
                 break;
         }
     }
@@ -159,11 +166,14 @@ public class MessageReceiver {
         node.send_restore_msg(key, msg);
     }
 
-    private static void handle_delete_file(Message msg, ChordNode node) {
+    private static void handle_find_delete_file_node(Message msg, ChordNode node) {
         long key = msg.get_key();
         InetSocketAddress peer_requesting = msg.get_peer_requesting();
-        msg = new Message(MessageType.DELETE_FILE, node.get_address(), address_to_string(peer_requesting), new Key(key));
-        node.send_delete_msg(key, msg);
+        msg = new Message(MessageType.FIND_DELETE_FILE_NODE, node.get_address(), address_to_string(peer_requesting), new Key(key));
+        InetSocketAddress successor = node.find_successor_addr(key, msg);
+        if (successor != null) {
+            node.get_executor().submit(new Delete(node, key));
+        }
     }
 
 }

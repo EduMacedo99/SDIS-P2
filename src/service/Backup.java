@@ -19,7 +19,6 @@ public class Backup implements Runnable {
 
     private static final int GET_FILE_KEY = 0;
     private static final int EXECUTE_BACKUP = 1;
-    private static final String FILES_TO_BACKUP_DIR = "files_to_backup";
 
     private final ChordNode node;
     private final String file_name;

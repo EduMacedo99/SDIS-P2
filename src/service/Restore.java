@@ -2,14 +2,11 @@ package src.service;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.regex.Pattern;
-
-import javax.swing.JToolBar.Separator;
 
 import src.network.ChordNode;
 import src.network.Key;
@@ -18,14 +15,11 @@ import src.utils.MessageType;
 
 import static src.utils.Utils.*;
 
-import src.service.Backup;
-
 public class Restore implements Runnable {
 
     private static final int SEND_RESTORE_MSG = 0;
     private static final int EXECUTE_RESTORE = 1;
     private static final int SAVE_FILE = 2;
-    private static final String FILES_TO_BACKUP_DIR = "files_to_backup";
 
     private final ChordNode node;
     private String file_name;
@@ -62,12 +56,11 @@ public class Restore implements Runnable {
                 get_file_key();
                 break;
             case EXECUTE_RESTORE:
-                restore_file();
+                get_restore_file();
                 break;
             case SAVE_FILE:
                 save_file();
                 break;
-
         }
     }
 
@@ -92,14 +85,12 @@ public class Restore implements Runnable {
 
         Message find_succ_msg = new Message(MessageType.RESTORE_FILE, node.get_address(), node.get_address(), key_file);
         node.send_restore_msg(key_file.key, find_succ_msg);
-        
     }
 
-
     /**
-     * envia o file
+     * Finds the file to restore and sends it to the requesting peer.
      */
-	public void restore_file() {
+	public void get_restore_file() {
 
         String file_path = node.get_files_path() + '/' + node.get_backed_up_file_name(key);
         Path path = Paths.get(file_path);
