@@ -287,7 +287,7 @@ public class ChordNode implements RMI {
         return files_backed_up.containsKey(key);
     }
 
-    public String get_file_name(long key) {
+    public String get_backed_up_file_name(long key) {
         return files_backed_up.get(key);
     }
     

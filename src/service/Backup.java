@@ -114,32 +114,30 @@ public class Backup implements Runnable {
      */
 	public void backup_file() {
 
-        System.out.println("Replication degree = " + backup_info.get_replication_degree());
+        System.out.println("Replication degree left = " + backup_info.get_replication_degree());
 
         boolean initiator = false;
         int new_rep_degree = backup_info.get_replication_degree() - 1;
-        System.out.println("Aqui3");
 
         if(node.get_file_path(key) != null) {
-            System.out.println("Initiator");
             initiator = true;
             new_rep_degree++;
         }
-        System.out.println("Aqui4");
 
-        if(backup_info.get_replication_degree() > 1) {
-            System.out.println("Message to successor");
+        if (node.has_file(key)) {
+            System.out.println("Replication degree cannot be met!");
+            return;
+        }
+
+        if(backup_info.get_replication_degree() > 1 || initiator) {
             Message msg = new Message(MessageType.BACKUP_FILE, node.get_address(), node.get_address(), 
                 new Key(key), file_name, new_rep_degree);
             msg.set_body(backup_info.get_body());
             send_message(node, node.get_successor(), msg);
         }
 
-        System.out.println("Aqui2");
-
         if(initiator) return;
 
-        System.out.println("Storing file");
         // Create file
         File file = new File(node.get_files_path() + '/' + file_name);
         file.getParentFile().mkdirs();

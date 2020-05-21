@@ -55,8 +55,7 @@ public class Delete implements Runnable {
             case EXECUTE_DELETE:
                 delete_file();
                 break;
-        }
-               
+        } 
     }
 
     /**
@@ -90,8 +89,14 @@ public class Delete implements Runnable {
      */
 	public void delete_file() {
 
-        String file_path = node.get_files_path() + '/' + node.get_file_name(key);
+        String file_name = node.get_backed_up_file_name(key);
+        String file_path = node.get_files_path() + '/' + file_name;
         Path path = Paths.get(file_path);
+
+        if(node.get_file_path(key) != null || file_name != null){
+            Message msg = new Message(MessageType.DELETE_FILE, node.get_address(), node.get_address(), new Key(key));
+            send_message(node, node.get_successor(), msg);
+        }
 
         if(path != null) {
 

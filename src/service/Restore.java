@@ -101,7 +101,7 @@ public class Restore implements Runnable {
      */
 	public void restore_file() {
 
-        String file_path = node.get_files_path() + '/' + node.get_file_name(key);
+        String file_path = node.get_files_path() + '/' + node.get_backed_up_file_name(key);
         Path path = Paths.get(file_path);
 
         if(path != null) {
