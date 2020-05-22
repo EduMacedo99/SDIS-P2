@@ -164,10 +164,13 @@ public class MessageReceiver {
     private static void handle_find_delete_file_node(Message msg, ChordNode node) {
         long key = msg.get_key();
         InetSocketAddress peer_requesting = msg.get_peer_requesting();
+        if (node.is_responsible_for_key(key)) {
+            node.get_executor().submit(new Delete(node, key));
+        }
         msg = new Message(MessageType.FIND_DELETE_FILE_NODE, node.get_address(), address_to_string(peer_requesting), new Key(key));
         InetSocketAddress successor = node.find_successor_addr(key, msg);
         if (successor != null) {
-            node.get_executor().submit(new Delete(node, key));
+            send_message(node, successor, msg);
         }
     }
 

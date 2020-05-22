@@ -77,6 +77,7 @@ public class Delete implements Runnable {
         Message find_succ_msg = new Message(MessageType.FIND_DELETE_FILE_NODE, node.get_address(), node.get_address(), key_file);
         InetSocketAddress successor = node.find_successor_addr(key_file.key, find_succ_msg);
         if (successor != null) {
+            System.out.println("Sending to successor");
             send_message(node, successor, find_succ_msg);
         }
 
