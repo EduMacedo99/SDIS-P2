@@ -38,7 +38,7 @@ public class Reclaim implements Runnable {
                 /* Request a backup of the file in the successor peer */
                 Message msg = new Message(MessageType.BACKUP_FILE, node.get_address(), node.get_address(),
                     new Key(key), path.getFileName().toString(), 1, true);
-                    
+
                 byte[] file_content = null;
                 try {
                     file_content = Files.readAllBytes(path);
@@ -57,6 +57,11 @@ public class Reclaim implements Runnable {
                     Files.delete(path);
                 } catch (IOException e) {
                     e.printStackTrace();
+                }
+
+                /* If the used space is small enough, there is no need to transfer more files */
+                if(disk.get_used_space() <= disk_space_to_reclaim) {
+                    break;
                 }
             }
         }
