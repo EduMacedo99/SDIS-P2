@@ -18,6 +18,7 @@ import src.service.Restore;
 
 import static src.utils.Utils.*;
 
+import src.utils.Disk;
 import src.utils.FileInfo;
 import src.utils.MessageType;
 
@@ -37,6 +38,7 @@ public class ChordNode implements RMI {
     private HashMap<Integer, InetSocketAddress> finger_table;
     private String files_path;
 
+    private Disk disk = new Disk();
     private HashMap<Long, FileInfo> files_list = new HashMap<Long, FileInfo>();
     private HashMap<Long, String> files_backed_up = new HashMap<Long, String>();
     private HashMap<Long, Path> files_restored = new HashMap<Long, Path>();
