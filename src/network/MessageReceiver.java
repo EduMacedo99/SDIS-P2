@@ -1,14 +1,9 @@
 package src.network;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import javax.net.ssl.SSLSocket;
-
-import javafx.scene.Node;
-
 import static src.utils.Utils.*;
 
 import src.service.Backup;

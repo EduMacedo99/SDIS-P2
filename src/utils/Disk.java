@@ -2,7 +2,7 @@ package src.utils;
 
 public class Disk { 
     
-    private final static int DEFAULT_DISK_SPACE = 1000;
+    private final static int DEFAULT_DISK_SPACE = 9500;
     private int total_space;
     private int used_space;
 

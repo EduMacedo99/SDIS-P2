@@ -55,7 +55,6 @@ public class Delete implements Runnable {
     public void get_file_key() {
 
         String file_path = FILES_TO_BACKUP_DIR + '/' + file_name;
-        //Path path = Paths.get(file_path);
 
         // Get file key
         Key key_file = null;
@@ -67,11 +66,18 @@ public class Delete implements Runnable {
             return;
         }
 
+        if (node.is_responsible_for_key(key_file.key)) {
+            this.key = key_file.key;
+            delete_file();
+            node.deleteFile_files_list(key);
+            return;
+        }
+
         // Send to successor of file key
         Message find_succ_msg = new Message(MessageType.FIND_DELETE_FILE_NODE, node.get_address(), node.get_address(), key_file);
         InetSocketAddress successor = node.find_successor_addr(key_file.key, find_succ_msg);
         if (successor != null) {
-            delete_file();
+            send_message(node, successor, find_succ_msg);
         }
 
         node.deleteFile_files_list(key);
@@ -85,7 +91,7 @@ public class Delete implements Runnable {
         String file_path = node.get_files_path() + '/' + file_name;
         Path path = Paths.get(file_path);
 
-        if(node.get_file_path(key) != null || file_name != null){
+        if(node.get_file_path(key) != null || file_name != null) {
             Message msg = new Message(MessageType.DELETE_FILE, node.get_address(), node.get_address(), new Key(key));
             send_message(node, node.get_successor(), msg);
         }

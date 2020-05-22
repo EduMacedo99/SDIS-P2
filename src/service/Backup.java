@@ -127,7 +127,7 @@ public class Backup implements Runnable {
 
         InetSocketAddress peer_requesting = backup_info.get_peer_requesting();
 
-        if (node.has_file(key) || node.get_local_address().equals(peer_requesting)) {
+        if (node.has_file(key)) { // || node.get_local_address().equals(peer_requesting)
             System.out.println("Replication degree cannot be met!");
             return;
         }
