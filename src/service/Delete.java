@@ -93,7 +93,10 @@ public class Delete implements Runnable {
         if(file_name != null) {
             // Delete the file via Java.nio
             try {
+                long file_size = Files.size(path); 
                 Files.delete(path);
+                node.get_disk().decrease_used_space((int)file_size);
+                node.get_disk().print_state();
             } catch (IOException ex) {
                 System.err.println("The file you want to delete was not found!\n");
                 return;

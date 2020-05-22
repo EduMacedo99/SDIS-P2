@@ -115,11 +115,13 @@ public class Backup implements Runnable {
 
         System.out.println("Replication degree left = " + backup_info.get_replication_degree());
 
-        boolean initiator = false;
+        boolean cannot_backup = false;
         int new_rep_degree = backup_info.get_replication_degree() - 1;
+        int file_length = backup_info.get_body().length;
 
-        if(node.get_file_path(key) != null) {
-            initiator = true;
+        /* If the current peer is the initiator or if it does not have enough available storage, it cannot backup the file */
+        if(node.get_file_path(key) != null || !node.get_disk().has_space_for(file_length)) {
+            cannot_backup = true;
             new_rep_degree++;
         }
 
@@ -128,14 +130,14 @@ public class Backup implements Runnable {
             return;
         }
 
-        if(backup_info.get_replication_degree() > 1 || initiator) {
+        if(backup_info.get_replication_degree() > 1 || cannot_backup) {
             Message msg = new Message(MessageType.BACKUP_FILE, node.get_address(), node.get_address(), 
                 new Key(key), file_name, new_rep_degree);
             msg.set_body(backup_info.get_body());
             send_message(node, node.get_successor(), msg);
         }
 
-        if(initiator) return;
+        if(cannot_backup) return;
 
         // Create file
         File file = new File(node.get_files_path() + '/' + file_name);
@@ -154,6 +156,8 @@ public class Backup implements Runnable {
             ex.printStackTrace();
         }
 
+        node.get_disk().increase_used_space(file_length);
+        node.get_disk().print_state();
         node.store_files_backed_up_key(key, file_name);
 
     }
