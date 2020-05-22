@@ -125,13 +125,15 @@ public class Backup implements Runnable {
             new_rep_degree++;
         }
 
-        if (node.has_file(key)) {
+        InetSocketAddress peer_requesting = backup_info.get_peer_requesting();
+
+        if (node.has_file(key) || node.get_local_address().equals(peer_requesting)) {
             System.out.println("Replication degree cannot be met!");
             return;
         }
 
         if(backup_info.get_replication_degree() > 1 || cannot_backup) {
-            Message msg = new Message(MessageType.BACKUP_FILE, node.get_address(), node.get_address(), 
+            Message msg = new Message(MessageType.BACKUP_FILE, node.get_address(), address_to_string(peer_requesting), 
                 new Key(key), file_name, new_rep_degree);
             msg.set_body(backup_info.get_body());
             send_message(node, node.get_successor(), msg);
