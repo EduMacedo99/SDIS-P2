@@ -13,6 +13,7 @@ src\network\Server.java
 src\service\Backup.java
 src\service\Restore.java
 src\service\Peer.java
+src\service\Reclaim.java
 src\service\TestApp.java
 src\utils\MessageType.java
 src\utils\Utils.java

@@ -15,6 +15,7 @@ import src.helper.PrintThread;
 import src.helper.StabilizeThread;
 import src.service.Backup;
 import src.service.Delete;
+import src.service.Reclaim;
 import src.service.Restore;
 
 import static src.utils.Utils.*;
@@ -145,6 +146,11 @@ public class ChordNode implements RMI {
     public void delete(final String filepath) {
         System.out.println("Delete is being initiated");
         executor.submit(new Delete(this, filepath));
+    }
+
+    public void reclaim(final int disk_space_to_reclaim) {
+        System.out.println("Reclaim is being initiated");
+        executor.submit(new Reclaim(this, disk_space_to_reclaim));
     }
 
     /* Chord related methods */
@@ -337,7 +343,7 @@ public class ChordNode implements RMI {
 
         // If key ∈ ]this_node_key, successor_key] then
         if(Key.betweenKeys(this.local_key.key, key, successor_key.key )) {
-            send_message(this, get_successor(), message);
+            send_message(this, get_successor(), message);  
 
         } else { 
             // Forward the query around the circle
