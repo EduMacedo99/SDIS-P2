@@ -40,6 +40,7 @@ public class MessageSender {
             socket = (SSLSocket) ssl_socket_factory.createSocket(server.getAddress(), server.getPort());
         } catch (IOException e) {
             System.err.println("Couldn't connect to peer!");
+            e.printStackTrace();
             return null;
         }
 

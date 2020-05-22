@@ -144,8 +144,6 @@ public class MessageReceiver {
         String[] pieces = new String(msg.get_body()).split(":");
         String address = pieces[0];
         int port = Integer.parseInt(pieces[1]);
-        System.out.println("----------");
-        System.out.println("Key: " + msg.get_key() + "  /  Successor: " + address + " " + port);
         
         // Send file
         Path path = node.get_file_path(msg.get_key());
@@ -166,6 +164,7 @@ public class MessageReceiver {
         InetSocketAddress peer_requesting = msg.get_peer_requesting();
         if (node.is_responsible_for_key(key)) {
             node.get_executor().submit(new Delete(node, key));
+            return;
         }
         msg = new Message(MessageType.FIND_DELETE_FILE_NODE, node.get_address(), address_to_string(peer_requesting), new Key(key));
         InetSocketAddress successor = node.find_successor_addr(key, msg);
@@ -173,5 +172,4 @@ public class MessageReceiver {
             send_message(node, successor, msg);
         }
     }
-
 }

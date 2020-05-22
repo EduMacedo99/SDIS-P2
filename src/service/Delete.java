@@ -92,9 +92,14 @@ public class Delete implements Runnable {
         String file_path = node.get_files_path() + '/' + file_name;
         Path path = Paths.get(file_path);
 
-        if(node.get_file_path(key) != null || file_name != null) {
+        boolean contains_cancelled_backup = false;
+
+        if(node.get_file_path(key) != null || file_name != null || (contains_cancelled_backup = node.contains_cancelled_backup(key))) {
             Message msg = new Message(MessageType.DELETE_FILE, node.get_address(), node.get_address(), new Key(key));
             send_message(node, node.get_successor(), msg);
+            if (contains_cancelled_backup) {
+                node.remove_cancelled_backup(key);
+            }
         }
 
         if(file_name != null) {

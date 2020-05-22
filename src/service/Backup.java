@@ -87,7 +87,6 @@ public class Backup implements Runnable {
      * Sends the file to the node that needs to store it.
      */
     public static void send_file(ChordNode sender_node, Key key_file, Path path, InetSocketAddress destination) {
-        System.out.println("Key: " + key_file + "  /  Successor: " + destination);
 
         if(path != null) {
             Message msg = new Message(MessageType.BACKUP_FILE, sender_node.get_address(), sender_node.get_address(),
@@ -119,9 +118,12 @@ public class Backup implements Runnable {
         int new_rep_degree = backup_info.get_replication_degree() - 1;
         int file_length = backup_info.get_body().length;
         boolean first_time = backup_info.get_header().split(" ").length == 7;
+        boolean not_enough_sapce = false;
 
         /* If the current peer is the initiator or if it does not have enough available storage, it cannot backup the file */
-        if(node.get_file_path(key) != null || !node.get_disk().has_space_for(file_length)) {
+        if(node.get_file_path(key) != null || (not_enough_sapce = !node.get_disk().has_space_for(file_length))) {
+            if (not_enough_sapce)
+                node.add_cancelled_backup(key);
             cannot_backup = true;
             new_rep_degree++;
         }

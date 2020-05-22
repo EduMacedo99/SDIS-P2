@@ -2,6 +2,7 @@ package src.network;
 
 import java.net.InetSocketAddress;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -42,6 +43,7 @@ public class ChordNode implements RMI {
     private HashMap<Long, FileInfo> files_list = new HashMap<Long, FileInfo>();
     private HashMap<Long, String> files_backed_up = new HashMap<Long, String>();
     private HashMap<Long, Path> files_restored = new HashMap<Long, Path>();
+    private HashSet<Long> cancelled_backups = new HashSet<Long>(); 
 
     public ChordNode(final InetSocketAddress local_address) {
         // Initialize local address
@@ -251,6 +253,18 @@ public class ChordNode implements RMI {
             }
         }
         return local_address;
+    }
+
+    public void add_cancelled_backup(long key) {
+        cancelled_backups.add(key);
+    }
+
+    public boolean contains_cancelled_backup(long key) {
+        return cancelled_backups.contains(key);
+    }
+
+    public void remove_cancelled_backup(long key) {
+        cancelled_backups.remove(key);
     }
 
     public boolean is_responsible_for_key(long key) {
