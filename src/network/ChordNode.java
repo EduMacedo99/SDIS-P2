@@ -131,6 +131,10 @@ public class ChordNode implements RMI {
         return disk;
     }
 
+    public HashMap<Long, String> get_files_backed_up() {
+        return files_backed_up;
+    }
+
     /* Service Interface */
 
     public void backup(final String file_name, final int replication_degree) {

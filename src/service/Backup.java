@@ -166,6 +166,5 @@ public class Backup implements Runnable {
         node.get_disk().increase_used_space(file_length);
         node.get_disk().print_state();
         node.store_files_backed_up_key(key, file_name);
-
     }
 }
