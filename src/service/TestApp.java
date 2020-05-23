@@ -23,6 +23,7 @@ public class TestApp {
 
             String file_path;
             int replication_degree;
+            int disk_space_to_reclaim;
 
             /* Performing the selected operation */
             switch (args[1]) {
@@ -53,13 +54,13 @@ public class TestApp {
                     file_path = args[2];
                     stub.delete(file_path);
                     break;
-                /*case "RECLAIM":
+                case "RECLAIM":
                     if (args.length != 3) {
                         System.out.println("Usage: java TestApp <hostname>/<peer_access_point> RECLAIM <disk_space_to_reclaim>");
                         return;
                     }
-                    diskSpaceToReclaim = Integer.parseInt(args[2]);
-                    stub.reclaim(diskSpaceToReclaim);
+                    disk_space_to_reclaim = Integer.parseInt(args[2]);
+                    stub.reclaim(disk_space_to_reclaim); 
                     break;
                 case "STATE":
                     if (args.length != 2) {
@@ -67,7 +68,7 @@ public class TestApp {
                         return;
                     }
                     stub.state();
-                    break;*/
+                    break;
             }
 
         } catch (Exception e) {

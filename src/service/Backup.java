@@ -87,11 +87,10 @@ public class Backup implements Runnable {
      * Sends the file to the node that needs to store it.
      */
     public static void send_file(ChordNode sender_node, Key key_file, Path path, InetSocketAddress destination) {
-        System.out.println("Key: " + key_file + "  /  Successor: " + destination);
 
         if(path != null) {
-            Message msg = new Message(MessageType.BACKUP_FILE, sender_node.get_address(), sender_node.get_address(), 
-                key_file, path.getFileName().toString(), sender_node.get_file_rep_degree(key_file.key));
+            Message msg = new Message(MessageType.BACKUP_FILE, sender_node.get_address(), sender_node.get_address(),
+                key_file, path.getFileName().toString(), sender_node.get_file_rep_degree(key_file.key), true);
 
             byte[] bFile = null;
 
@@ -115,27 +114,46 @@ public class Backup implements Runnable {
 
         System.out.println("Replication degree left = " + backup_info.get_replication_degree());
 
-        boolean initiator = false;
-        int new_rep_degree = backup_info.get_replication_degree() - 1;
+        boolean cannot_backup = false;
+        int old_rep_degree = backup_info.get_replication_degree();
+        int new_rep_degree = old_rep_degree - 1;
+        int file_length = backup_info.get_body().length;
+        boolean first_time = backup_info.get_header().split(" ").length == 7;
+        boolean not_enough_space = false;
+        boolean has_file = false;
 
-        if(node.get_file_path(key) != null) {
-            initiator = true;
+        /* If the current peer is the initiator or if it does not have enough available storage, it cannot backup the file */
+        if(node.get_file_path(key) != null || (not_enough_space = !node.get_disk().has_space_for(file_length))) {
+            if (not_enough_space)
+                node.add_cancelled_backup(key);
+            cannot_backup = true;
             new_rep_degree++;
         }
 
-        if (node.has_file(key)) {
+        InetSocketAddress peer_requesting = backup_info.get_peer_requesting();
+
+        if ((node.get_local_address().equals(peer_requesting) && !first_time)) {  
             System.out.println("Replication degree cannot be met!");
             return;
         }
 
-        if(backup_info.get_replication_degree() > 1 || initiator) {
-            Message msg = new Message(MessageType.BACKUP_FILE, node.get_address(), node.get_address(), 
+        if (node.has_file(key)) {
+            has_file = true;
+        }
+
+        if(old_rep_degree > 1 || cannot_backup) {
+            if (has_file) {
+                old_rep_degree--;
+            }
+            if (first_time) 
+                peer_requesting = node.get_local_address();
+            Message msg = new Message(MessageType.BACKUP_FILE, node.get_address(), address_to_string(peer_requesting), 
                 new Key(key), file_name, new_rep_degree);
             msg.set_body(backup_info.get_body());
             send_message(node, node.get_successor(), msg);
         }
 
-        if(initiator) return;
+        if(cannot_backup || has_file) return;
 
         // Create file
         File file = new File(node.get_files_path() + '/' + file_name);
@@ -154,7 +172,8 @@ public class Backup implements Runnable {
             ex.printStackTrace();
         }
 
+        node.get_disk().increase_used_space(file_length);
+        node.get_disk().print_state();
         node.store_files_backed_up_key(key, file_name);
-
     }
 }

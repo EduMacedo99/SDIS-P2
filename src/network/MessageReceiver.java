@@ -1,14 +1,9 @@
 package src.network;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import javax.net.ssl.SSLSocket;
-
-import javafx.scene.Node;
-
 import static src.utils.Utils.*;
 
 import src.service.Backup;
@@ -149,8 +144,6 @@ public class MessageReceiver {
         String[] pieces = new String(msg.get_body()).split(":");
         String address = pieces[0];
         int port = Integer.parseInt(pieces[1]);
-        System.out.println("----------");
-        System.out.println("Key: " + msg.get_key() + "  /  Successor: " + address + " " + port);
         
         // Send file
         Path path = node.get_file_path(msg.get_key());
@@ -169,11 +162,14 @@ public class MessageReceiver {
     private static void handle_find_delete_file_node(Message msg, ChordNode node) {
         long key = msg.get_key();
         InetSocketAddress peer_requesting = msg.get_peer_requesting();
+        if (node.is_responsible_for_key(key)) {
+            node.get_executor().submit(new Delete(node, key));
+            return;
+        }
         msg = new Message(MessageType.FIND_DELETE_FILE_NODE, node.get_address(), address_to_string(peer_requesting), new Key(key));
         InetSocketAddress successor = node.find_successor_addr(key, msg);
         if (successor != null) {
-            node.get_executor().submit(new Delete(node, key));
+            send_message(node, successor, msg);
         }
     }
-
 }

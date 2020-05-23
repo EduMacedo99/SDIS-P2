@@ -2,6 +2,7 @@ package src.network;
 
 import java.net.InetSocketAddress;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -14,10 +15,13 @@ import src.helper.PrintThread;
 import src.helper.StabilizeThread;
 import src.service.Backup;
 import src.service.Delete;
+import src.service.Reclaim;
 import src.service.Restore;
+import src.service.State;
 
 import static src.utils.Utils.*;
 
+import src.utils.Disk;
 import src.utils.FileInfo;
 import src.utils.MessageType;
 
@@ -37,9 +41,11 @@ public class ChordNode implements RMI {
     private HashMap<Integer, InetSocketAddress> finger_table;
     private String files_path;
 
+    private Disk disk = new Disk();
     private HashMap<Long, FileInfo> files_list = new HashMap<Long, FileInfo>();
     private HashMap<Long, String> files_backed_up = new HashMap<Long, String>();
     private HashMap<Long, Path> files_restored = new HashMap<Long, Path>();
+    private HashSet<Long> cancelled_backups = new HashSet<Long>(); 
 
     public ChordNode(final InetSocketAddress local_address) {
         // Initialize local address
@@ -122,6 +128,18 @@ public class ChordNode implements RMI {
         return files_path;
     }
 
+    public Disk get_disk() {
+        return disk;
+    }
+
+    public HashMap<Long, String> get_files_backed_up() {
+        return files_backed_up;
+    }
+
+    public HashMap<Long, FileInfo> get_files_list() {
+        return files_list;
+    }
+
     /* Service Interface */
 
     public void backup(final String file_name, final int replication_degree) {
@@ -137,6 +155,16 @@ public class ChordNode implements RMI {
     public void delete(final String filepath) {
         System.out.println("Delete is being initiated");
         executor.submit(new Delete(this, filepath));
+    }
+
+    public void reclaim(final int disk_space_to_reclaim) {
+        System.out.println("Reclaim is being initiated");
+        executor.submit(new Reclaim(this, disk_space_to_reclaim));
+    }
+
+    public void state() {
+        System.out.println(" *** State request ***");
+        executor.submit(new State(this));
     }
 
     /* Chord related methods */
@@ -247,6 +275,18 @@ public class ChordNode implements RMI {
         return local_address;
     }
 
+    public void add_cancelled_backup(long key) {
+        cancelled_backups.add(key);
+    }
+
+    public boolean contains_cancelled_backup(long key) {
+        return cancelled_backups.contains(key);
+    }
+
+    public void remove_cancelled_backup(long key) {
+        cancelled_backups.remove(key);
+    }
+
     public boolean is_responsible_for_key(long key) {
         Key predecessor_key = Key.create_key_from_address(get_predecessor());
         return Key.betweenKeys(predecessor_key.key, key, local_key.key);
@@ -317,7 +357,7 @@ public class ChordNode implements RMI {
 
         // If key ∈ ]this_node_key, successor_key] then
         if(Key.betweenKeys(this.local_key.key, key, successor_key.key )) {
-            send_message(this, get_successor(), message);
+            send_message(this, get_successor(), message);  
 
         } else { 
             // Forward the query around the circle

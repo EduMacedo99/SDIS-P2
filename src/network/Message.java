@@ -60,19 +60,19 @@ public class Message implements Serializable{
         this.body = "".getBytes();
     }
 
+    public Message(String type, String sender_address, String peer_requesting_address, Key key, String file_name, int replication_degree, boolean initiator) {
+        this.type = type;
+        this.sender_address = sender_address;
+        this.header = type + " " + sender_address + " " + peer_requesting_address + " " + key + " " + file_name + " " + replication_degree + " " + "initiator";
+        this.body = "".getBytes();
+    }
+
     public Message(String type, String sender_address, String peer_requesting_address, Key key, int ith_finger) {
         this.type = type;
         this.sender_address = sender_address;
         this.header = type + " " + sender_address + " " + peer_requesting_address + " " + key + " " + ith_finger;
         this.body = "".getBytes();
     }
-
-    /* public Message(String type, String sender_address, String peer_requesting_address, byte[] bFile, Key key, String file_name, int replication_degree) {
-        this.type = type;
-        this.sender_address = sender_address;
-        this.header = type + " " + sender_address + " " + peer_requesting_address + " " + key + " " + file_name + " " + replication_degree;
-        this.body = bFile;
-	} */
 
 	public void set_body(byte[] body) {
         this.body = body;

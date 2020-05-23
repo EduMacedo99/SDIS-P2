@@ -105,7 +105,6 @@ public class Restore implements Runnable {
                 bFile = Files.readAllBytes(path);
             } catch (IOException ex) {
                 System.err.println("The file you want to restore was not found!\n");
-                //TODO caso este node fizer reclaim 0, já não vai conter o file e é necessário procurar nos nodes seguintes ?? (por causa do replication degree)
                 return;
             }
 
