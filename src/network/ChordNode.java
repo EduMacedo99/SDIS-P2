@@ -6,12 +6,10 @@ import java.util.HashSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import java.io.File;
 import java.nio.file.Path;
 
 import src.helper.FixFingersThread;
 import src.helper.PredecessorThread;
-import src.helper.PrintThread;
 import src.helper.StabilizeThread;
 import src.service.Backup;
 import src.service.Delete;
@@ -35,7 +33,6 @@ public class ChordNode implements RMI {
     private final StabilizeThread stabilize_thread;
     private final FixFingersThread fixFingers_thread;
     private final PredecessorThread predecessor_thread;
-    private final PrintThread print_thread;
     
     private InetSocketAddress predecessor;
     private HashMap<Integer, InetSocketAddress> finger_table;
@@ -69,25 +66,15 @@ public class ChordNode implements RMI {
         stabilize_thread = new StabilizeThread(this, 3000);
         fixFingers_thread = new FixFingersThread(this, 3000);
         predecessor_thread = new PredecessorThread(this, 3000);
-        // Provisory
-        print_thread = new PrintThread(this, 3000);
 
         // Start server
         server = new Server(this, local_address.getPort());
         server.start();
 
+        // Initialize file system
         files_path = "peers/" + local_key.key + "/files";
-
         create_directory(files_path);
         create_directory("peers/" + local_key.key + "/restore");
-    }
-
-    private void create_directory(String path) {
-        File file = new File(path);
-        if (file.mkdirs())
-            System.out.println("New directory created: " + path);
-        else
-            System.out.println("Directory " + path + " already exists");
     }
 
     /* Setters and getters */
@@ -169,14 +156,20 @@ public class ChordNode implements RMI {
 
     /* Chord related methods */
 
-    public void update_ith_finger(final int key, final InetSocketAddress value) {
+    /**
+     * Updates the ith finger tuple, assigning the specified value to it.
+     */
+    public void update_ith_finger(final int ith, final InetSocketAddress value) {
         // Join circle recently
-        if(get_successor() == null && key == -1)
+        if(get_successor() == null && ith == -1)
             finger_table.put(1, value);
         else
-            finger_table.put(key, value);
+            finger_table.put(ith, value);
     }
 
+    /**
+     * Updates the sucessor node.
+     */
     public void update_successor(final InetSocketAddress value) {
         update_ith_finger(1, value);
         if (value != null && !value.equals(local_address)) {
@@ -184,6 +177,9 @@ public class ChordNode implements RMI {
         }
     }
 
+    /**
+     * Handles the join process of a node in the circle.
+     */
     public boolean join(final InetSocketAddress contact) {
 
         if (contact == null) {
@@ -199,7 +195,6 @@ public class ChordNode implements RMI {
             // Node is joining an existing circle   <TYPE> <SENDER_ID> <PEER_REQUESTING> <KEY>
             final Message msg = new Message(MessageType.FIND_SUCCESSOR_KEY, get_address(), get_address(), local_key);
             send_message(this, contact, msg);
-
         }
         return true;
     }
@@ -211,9 +206,11 @@ public class ChordNode implements RMI {
         stabilize_thread.start();
         fixFingers_thread.start();
         predecessor_thread.start();
-        //print_thread.start();
     }
 
+    /**
+     * Sends a simple notification to the sucessor node.
+     */
     public void notify_successor() {
         Message msg = new Message(MessageType.NOTIFY, get_address());
         send_message(this, get_successor(), msg);
@@ -223,7 +220,6 @@ public class ChordNode implements RMI {
      * Updates predecessor after being notified.
      */ 
     public void notified(final InetSocketAddress possible_predecessor) {
-
         if(get_predecessor() == null){
             predecessor = possible_predecessor;
             return;
@@ -274,6 +270,8 @@ public class ChordNode implements RMI {
         }
         return local_address;
     }
+
+    /* Information retrieval & update */
 
     public void add_cancelled_backup(long key) {
         cancelled_backups.add(key);
@@ -342,7 +340,7 @@ public class ChordNode implements RMI {
     }
 
     /**
-     * Tries to reach the node that is suposed to have the file (the successor of key file).
+     * Tries to reach the node that is supposed to have the file (the successor of key file).
      * If the node has the file sends the restore file.
      * If along the way it finds a node with the same file (due to the replication degree) it also sends the restore file and ends the search.
      */
@@ -368,6 +366,5 @@ public class ChordNode implements RMI {
             }
             send_message(this, n0_addr, message);
         }
-
 	}
 }

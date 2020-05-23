@@ -1,5 +1,6 @@
 package src.utils;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.InetSocketAddress;
@@ -18,8 +19,10 @@ public class Utils {
     public static final int KEY_SIZE = 5;
     public static final String CRLF = "\r\n\r\n";
     public static final String FILES_TO_BACKUP_DIR = "files_to_backup";
-    private static ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);    
 
+    /**
+     * Hash function used to generate the keys.
+     */
     public static String hash(byte[] data) {
         MessageDigest message_digest = null;
         try {
@@ -30,10 +33,12 @@ public class Utils {
 
         message_digest.update(data);
         String encrypted_string = new String(message_digest.digest());
-
         return encrypted_string;
     }
 
+    /**
+     * Trims the input message by deleting the null characters at the end of it.
+     */
     public static byte[] trim_message(byte[] message) {
         String string_msg = new String(message);
         int final_index = string_msg.length() - 1;
@@ -47,18 +52,17 @@ public class Utils {
         return trimmed;
     }
 
+    /**
+     * Starts a request, i.e. sends a message to the destination and returns the response.
+     */
     public static Message request_message(ChordNode node, InetSocketAddress destination, Message msg) {
 
         Message message = null;
-
         try {
             SSLSocket socket = MessageSender.send_message(msg, destination);
-
             if (socket == null) {
                 return null;
             }
-            
-            //Thread.sleep(250);
             
             ObjectInputStream input = null;
             
@@ -67,15 +71,12 @@ public class Utils {
             } catch (IOException e) {
                 //e.printStackTrace();
             }
-
             try {
                 message = (Message) input.readObject();
             } catch (Exception e) {
                 return null;
             }
-
             socket.close();
-
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -83,10 +84,16 @@ public class Utils {
         return message;
     }
 
+    /**
+     * Sends a response using the specified socket.
+     */
     public static void send_response(ChordNode peer, Message msg, SSLSocket socket) {
         MessageSender.send_message(msg, socket);
     }
 
+    /**
+     * Sends a message to the destination, where the sender is the peer specified in the first argument.
+     */
     public static void send_message(ChordNode peer, InetSocketAddress destination, Message msg) {
         try {
             SSLSocket socket = MessageSender.send_message(msg, destination);
@@ -97,11 +104,17 @@ public class Utils {
         }
     }
 
+    /**
+     * Converts an InetSocketAddress to a string in <address>:<port> format.
+     */
     public static String address_to_string(InetSocketAddress address) {
         if (address == null) return "null";
         return address.getAddress().getHostAddress() + ":" + address.getPort();
     }
 
+    /**
+     * Builds a new InetSocketAddress from the specified address string.
+     */
     public static InetSocketAddress string_to_address(String address_string) {
         try {
             return new InetSocketAddress(address_string.split(":")[0], Integer.parseInt(address_string.split(":")[1]));
@@ -117,6 +130,17 @@ public class Utils {
             return filepath;
         String[] path_pieces = filepath.split(Pattern.quote("\\"));
         return path_pieces[path_pieces.length-1];
+    }
+
+    /**
+     * Creates a new directory from the specified file.
+     */
+    public static void create_directory(String path) {
+        File file = new File(path);
+        if (file.mkdirs())
+            System.out.println("New directory created: " + path);
+        else
+            System.out.println("Directory " + path + " already exists");
     }
 
 }
