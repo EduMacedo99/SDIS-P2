@@ -25,6 +25,7 @@ public class State implements Runnable {
             long key = entry.getKey();
             FileInfo file_details = entry.getValue();
             System.out.println("------ FILE ------");
+            System.out.println("File key: " + key);
             System.out.println("File name: " + get_file_name(file_details.path.toString()));
             System.out.println("Desired rep degree: " + file_details.replication_degree);
         }
@@ -34,6 +35,5 @@ public class State implements Runnable {
         System.out.println("\n----> DISK STATUS <----");
         node.get_disk().print_state();
     }
-
     
 }

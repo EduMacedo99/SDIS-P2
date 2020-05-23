@@ -111,24 +111,12 @@ public class Utils {
         return null;
     }
 
-
-    public static byte[] longToBytes(long x) {
-        buffer.putLong(0, x);
-        return buffer.array();
-    }
-
-    public static long bytesToLong(byte[] bytes) {
-        buffer.put(bytes, 0, bytes.length);
-        buffer.flip();
-        return buffer.getLong();
-    }
-
     /* Returns the name of a file from its path */
     public static String get_file_name(String filepath) {
         if(!filepath.contains("\\"))
             return filepath;
-        String[] pathPieces = filepath.split(Pattern.quote("\\"));
-        return pathPieces[pathPieces.length-1];
+        String[] path_pieces = filepath.split(Pattern.quote("\\"));
+        return path_pieces[path_pieces.length-1];
     }
 
 }

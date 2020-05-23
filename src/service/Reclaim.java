@@ -50,7 +50,7 @@ public class Reclaim implements Runnable {
 
                 /* Remove the file from this peer */
                 disk.decrease_used_space(file_content.length);
-                node.deleteFile_files_list(key);
+                node.deleteFile_files_backed_up(key);
                 node.add_cancelled_backup(key);
                 try {
                     Files.delete(path);

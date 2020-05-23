@@ -115,14 +115,16 @@ public class Backup implements Runnable {
         System.out.println("Replication degree left = " + backup_info.get_replication_degree());
 
         boolean cannot_backup = false;
-        int new_rep_degree = backup_info.get_replication_degree() - 1;
+        int old_rep_degree = backup_info.get_replication_degree();
+        int new_rep_degree = old_rep_degree - 1;
         int file_length = backup_info.get_body().length;
         boolean first_time = backup_info.get_header().split(" ").length == 7;
-        boolean not_enough_sapce = false;
+        boolean not_enough_space = false;
+        boolean has_file = false;
 
         /* If the current peer is the initiator or if it does not have enough available storage, it cannot backup the file */
-        if(node.get_file_path(key) != null || (not_enough_sapce = !node.get_disk().has_space_for(file_length))) {
-            if (not_enough_sapce)
+        if(node.get_file_path(key) != null || (not_enough_space = !node.get_disk().has_space_for(file_length))) {
+            if (not_enough_space)
                 node.add_cancelled_backup(key);
             cannot_backup = true;
             new_rep_degree++;
@@ -130,12 +132,19 @@ public class Backup implements Runnable {
 
         InetSocketAddress peer_requesting = backup_info.get_peer_requesting();
 
-        if (node.has_file(key) || (node.get_local_address().equals(peer_requesting) && !first_time)) {  
+        if ((node.get_local_address().equals(peer_requesting) && !first_time)) {  
             System.out.println("Replication degree cannot be met!");
             return;
         }
 
-        if(backup_info.get_replication_degree() > 1 || cannot_backup) {
+        if (node.has_file(key)) {
+            has_file = true;
+        }
+
+        if(old_rep_degree > 1 || cannot_backup) {
+            if (has_file) {
+                old_rep_degree--;
+            }
             if (first_time) 
                 peer_requesting = node.get_local_address();
             Message msg = new Message(MessageType.BACKUP_FILE, node.get_address(), address_to_string(peer_requesting), 
@@ -144,7 +153,7 @@ public class Backup implements Runnable {
             send_message(node, node.get_successor(), msg);
         }
 
-        if(cannot_backup) return;
+        if(cannot_backup || has_file) return;
 
         // Create file
         File file = new File(node.get_files_path() + '/' + file_name);
