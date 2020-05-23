@@ -29,7 +29,6 @@ public class Reclaim implements Runnable {
             System.out.println("Reclaim completed, no need to transfer any files!");
         } else {
             for (Map.Entry<Long, String> entry : node.get_files_backed_up().entrySet()) {
-                System.out.println("Key = " + entry.getKey() + ", Value = " + entry.getValue());
                 long key = entry.getKey();
                 String file_name = entry.getValue();
                 String file_path = node.get_files_path() + '/' + file_name;

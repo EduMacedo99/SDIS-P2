@@ -53,7 +53,7 @@ public class Disk {
 
     /* Prints the disk state */
     public void print_state() {
-        System.out.println("Disk - " + total_space + " bytes");
+        System.out.println(" -> Total: " + total_space + " bytes");
         System.out.println(" -> Used: " + used_space + " bytes (" + (int)(get_use_percentage()*100.0) + " %)");
         System.out.println(" -> Available: " + get_available_space() + " bytes");
     }

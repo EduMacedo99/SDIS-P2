@@ -62,13 +62,13 @@ public class TestApp {
                     disk_space_to_reclaim = Integer.parseInt(args[2]);
                     stub.reclaim(disk_space_to_reclaim); 
                     break;
-                /*case "STATE":
+                case "STATE":
                     if (args.length != 2) {
                         System.out.println("Usage: java TestApp <hostname>/<peer_access_point> STATE");
                         return;
                     }
                     stub.state();
-                    break;*/
+                    break;
             }
 
         } catch (Exception e) {

@@ -6,6 +6,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.regex.Pattern;
 
 import javax.net.ssl.SSLSocket;
 
@@ -120,6 +121,14 @@ public class Utils {
         buffer.put(bytes, 0, bytes.length);
         buffer.flip();
         return buffer.getLong();
+    }
+
+    /* Returns the name of a file from its path */
+    public static String get_file_name(String filepath) {
+        if(!filepath.contains("\\"))
+            return filepath;
+        String[] pathPieces = filepath.split(Pattern.quote("\\"));
+        return pathPieces[pathPieces.length-1];
     }
 
 }

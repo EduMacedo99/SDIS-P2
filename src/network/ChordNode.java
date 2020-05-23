@@ -17,6 +17,7 @@ import src.service.Backup;
 import src.service.Delete;
 import src.service.Reclaim;
 import src.service.Restore;
+import src.service.State;
 
 import static src.utils.Utils.*;
 
@@ -135,6 +136,10 @@ public class ChordNode implements RMI {
         return files_backed_up;
     }
 
+    public HashMap<Long, FileInfo> get_files_list() {
+        return files_list;
+    }
+
     /* Service Interface */
 
     public void backup(final String file_name, final int replication_degree) {
@@ -155,6 +160,11 @@ public class ChordNode implements RMI {
     public void reclaim(final int disk_space_to_reclaim) {
         System.out.println("Reclaim is being initiated");
         executor.submit(new Reclaim(this, disk_space_to_reclaim));
+    }
+
+    public void state() {
+        System.out.println(" *** State request ***");
+        executor.submit(new State(this));
     }
 
     /* Chord related methods */
