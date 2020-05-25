@@ -3,6 +3,7 @@ package src.network;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -345,7 +346,6 @@ public class ChordNode implements RMI {
      * If along the way it finds a node with the same file (due to the replication degree) it also sends the restore file and ends the search.
      */
 	public void send_restore_msg(final long key, final Message message) {
-
         if(has_file(key)){
             get_executor().submit(new Restore(this, key, message));
             return;
@@ -354,7 +354,7 @@ public class ChordNode implements RMI {
         final Key successor_key = Key.create_key_from_address(get_successor());
 
         // If key ∈ ]this_node_key, successor_key] then
-        if(Key.betweenKeys(this.local_key.key, key, successor_key.key )) {
+        /*if(Key.betweenKeys(this.local_key.key, key, successor_key.key )) {
             send_message(this, get_successor(), message);  
 
         } else { 
@@ -365,6 +365,7 @@ public class ChordNode implements RMI {
                 return;
             }
             send_message(this, n0_addr, message);
-        }
+        }*/
+        send_message(this, get_successor(), message); // TEMP
 	}
 }

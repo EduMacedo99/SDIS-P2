@@ -153,6 +153,7 @@ public class MessageReceiver {
     }
 
     private static void handle_restore_file(Message msg, ChordNode node) {
+        System.out.println("HANDLE RESTORE");
         long key = msg.get_key();
         InetSocketAddress peer_requesting = msg.get_peer_requesting();
         msg = new Message(MessageType.RESTORE_FILE, node.get_address(), address_to_string(peer_requesting), new Key(key));
