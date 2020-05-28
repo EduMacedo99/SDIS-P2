@@ -56,8 +56,12 @@ public class MessageReceiver {
                 node.get_executor().submit(new Backup(node, msg));
                 break;
                 
-            case MessageType.RESTORE_FILE:
-                handle_restore_file(msg, node);
+            case MessageType.FIND_RESTORE_FILE:
+                handle_find_restore_file(msg, node);
+                break;
+
+            case MessageType.FOUND_RESTORE_FILE:
+                node.get_executor().submit(new Restore(node, msg.get_key(), msg));
                 break;
 
             case MessageType.RETRIEVE_FILE:
@@ -152,12 +156,15 @@ public class MessageReceiver {
         }
     }
 
-    private static void handle_restore_file(Message msg, ChordNode node) {
-        System.out.println("HANDLE RESTORE");
+    private static void handle_find_restore_file(Message msg, ChordNode node) {
         long key = msg.get_key();
         InetSocketAddress peer_requesting = msg.get_peer_requesting();
-        msg = new Message(MessageType.RESTORE_FILE, node.get_address(), address_to_string(peer_requesting), new Key(key));
-        node.send_restore_msg(key, msg);
+        msg = new Message(MessageType.FIND_RESTORE_FILE, node.get_address(), address_to_string(peer_requesting), new Key(key));
+        InetSocketAddress successor = node.find_successor_addr(key, msg);
+        if (successor != null) {
+            Message found_succ_msg = new Message(MessageType.FOUND_RESTORE_FILE, node.get_address(), address_to_string(peer_requesting), new Key(key));
+            send_message(node, successor, found_succ_msg);
+        }
     }
 
     private static void handle_find_delete_file_node(Message msg, ChordNode node) {

@@ -2,6 +2,7 @@ package src.service;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -83,8 +84,12 @@ public class Restore implements Runnable {
             return;
         }
 
-        Message find_succ_msg = new Message(MessageType.RESTORE_FILE, node.get_address(), node.get_address(), key_file);
-        node.send_restore_msg(key_file.key, find_succ_msg);
+        Message find_succ_msg = new Message(MessageType.FIND_RESTORE_FILE, node.get_address(), node.get_address(), key_file);
+        InetSocketAddress successor = node.find_successor_addr(key_file.key, find_succ_msg);
+        if (successor != null) {
+            Message found_succ_msg = new Message(MessageType.FOUND_RESTORE_FILE, node.get_address(), node.get_address(), key_file);
+            send_message(node, successor, found_succ_msg);
+        }
     }
 
     /**
@@ -92,11 +97,14 @@ public class Restore implements Runnable {
      */
 	public void get_restore_file() {
 
-        String file_path = node.get_files_path() + '/' + node.get_backed_up_file_name(key);
-        Path path = Paths.get(file_path);
+        String file_name = node.get_backed_up_file_name(key);
 
-        if(path != null) {
-            Message msg2 = new Message(MessageType.RETRIEVE_FILE, node.get_address(), msg.get_peer_requesting().getHostName() , new Key(msg.get_key()));
+        if (file_name != null) {
+
+            String file_path = node.get_files_path() + '/' + file_name;
+            Path path = Paths.get(file_path);
+
+            Message msg2 = new Message(MessageType.RETRIEVE_FILE, node.get_address(), address_to_string(msg.get_peer_requesting()), new Key(msg.get_key()));
 
             byte[] bFile = null;
 
@@ -110,6 +118,24 @@ public class Restore implements Runnable {
 
             msg2.set_body(bFile);
             send_message(node, msg.get_peer_requesting() , msg2);
+
+        } else {
+            InetSocketAddress initiator;
+            boolean first_time = false;
+            if (msg.get_header().split(" ").length == 4) {
+                initiator = node.get_local_address();
+                first_time = true;
+            } else {
+                initiator = string_to_address(msg.get_header().split(" ")[4]);
+            }
+
+            if (!first_time && node.get_local_address().equals(initiator)) {
+                System.out.println("Restore failed! File was not found!");
+                return;
+            }
+
+            Message found_succ_msg = new Message(MessageType.FOUND_RESTORE_FILE, node.get_address(), address_to_string(msg.get_peer_requesting()), new Key(key), address_to_string(initiator));
+            send_message(node, node.get_successor(), found_succ_msg);
         }
 
     }

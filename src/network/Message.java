@@ -53,6 +53,13 @@ public class Message implements Serializable{
         this.body = "".getBytes();
     }
 
+    public Message(String type, String sender_address, String peer_requesting_address, Key key, String initiator) {
+        this.type = type;
+        this.sender_address = sender_address;
+        this.header = type + " " + sender_address + " " + peer_requesting_address + " " + key + " " + initiator;
+        this.body = "".getBytes();
+    }
+
     public Message(String type, String sender_address, String peer_requesting_address, Key key, String file_name, int replication_degree) {
         this.type = type;
         this.sender_address = sender_address;

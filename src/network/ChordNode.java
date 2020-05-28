@@ -339,33 +339,4 @@ public class ChordNode implements RMI {
     public void deleteFile_files_backed_up(long key) {
         files_backed_up.remove(key);
     }
-
-    /**
-     * Tries to reach the node that is supposed to have the file (the successor of key file).
-     * If the node has the file sends the restore file.
-     * If along the way it finds a node with the same file (due to the replication degree) it also sends the restore file and ends the search.
-     */
-	public void send_restore_msg(final long key, final Message message) {
-        if(has_file(key)){
-            get_executor().submit(new Restore(this, key, message));
-            return;
-        }
-
-        final Key successor_key = Key.create_key_from_address(get_successor());
-
-        // If key ∈ ]this_node_key, successor_key] then
-        /*if(Key.betweenKeys(this.local_key.key, key, successor_key.key )) {
-            send_message(this, get_successor(), message);  
-
-        } else { 
-            // Forward the query around the circle
-            final InetSocketAddress n0_addr = closest_preceding_node_addr(key);
-            if(n0_addr.equals(local_address)){
-                System.out.println("Node successor of file key does not have the file!!");
-                return;
-            }
-            send_message(this, n0_addr, message);
-        }*/
-        send_message(this, get_successor(), message); // TEMP
-	}
 }
