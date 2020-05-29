@@ -1,9 +1,8 @@
 package src.network;
 
 import java.net.InetSocketAddress;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -36,14 +35,14 @@ public class ChordNode implements RMI {
     private final PredecessorThread predecessor_thread;
     
     private InetSocketAddress predecessor;
-    private HashMap<Integer, InetSocketAddress> finger_table;
+    private ConcurrentHashMap<Integer, InetSocketAddress> finger_table;
     private String files_path;
 
     private Disk disk = new Disk();
-    private HashMap<Long, FileInfo> files_list = new HashMap<Long, FileInfo>();
-    private HashMap<Long, String> files_backed_up = new HashMap<Long, String>();
-    private HashMap<Long, Path> files_restored = new HashMap<Long, Path>();
-    private HashSet<Long> cancelled_backups = new HashSet<Long>(); 
+    private ConcurrentHashMap<Long, FileInfo> files_list = new ConcurrentHashMap<Long, FileInfo>();
+    private ConcurrentHashMap<Long, String> files_backed_up = new ConcurrentHashMap<Long, String>();
+    private ConcurrentHashMap<Long, Path> files_restored = new ConcurrentHashMap<Long, Path>();
+    private HashSet<Long> cancelled_backups = new HashSet<Long>();
 
     public ChordNode(final InetSocketAddress local_address) {
         // Initialize local address
@@ -54,7 +53,7 @@ public class ChordNode implements RMI {
         System.out.println("Key: " + local_key);
 
         // Initialize finger table
-        finger_table = new HashMap<Integer, InetSocketAddress>();
+        finger_table = new ConcurrentHashMap<Integer, InetSocketAddress>();
         for (int i = 1; i <= KEY_SIZE; i++) {
             update_ith_finger(i, null);
         }
@@ -120,11 +119,11 @@ public class ChordNode implements RMI {
         return disk;
     }
 
-    public HashMap<Long, String> get_files_backed_up() {
+    public ConcurrentHashMap<Long, String> get_files_backed_up() {
         return files_backed_up;
     }
 
-    public HashMap<Long, FileInfo> get_files_list() {
+    public ConcurrentHashMap<Long, FileInfo> get_files_list() {
         return files_list;
     }
 

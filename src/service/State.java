@@ -1,7 +1,7 @@
 package src.service;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import src.network.ChordNode;
 import src.utils.FileInfo;
@@ -20,7 +20,7 @@ public class State implements Runnable {
         
         /* Looking into the data stored in the files_list HashMap */
         System.out.println("----> LIST OF INITIATED BACKUPS <----");
-        HashMap<Long, FileInfo> files_list = node.get_files_list();
+        ConcurrentHashMap<Long, FileInfo> files_list = node.get_files_list();
         for (Map.Entry<Long, FileInfo> entry : files_list.entrySet()) {
             long key = entry.getKey();
             FileInfo file_details = entry.getValue();

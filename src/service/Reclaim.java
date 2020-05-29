@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import src.network.ChordNode;
@@ -14,35 +16,37 @@ import src.utils.MessageType;
 import static src.utils.Utils.*;
 
 public class Reclaim implements Runnable {
-    private ChordNode node;
-    private int disk_space_to_reclaim;
+    private final ChordNode node;
+    private final int disk_space_to_reclaim;
 
-    public Reclaim(ChordNode node, int disk_space_to_reclaim) {
+    public Reclaim(final ChordNode node, final int disk_space_to_reclaim) {
         this.disk_space_to_reclaim = disk_space_to_reclaim;
         this.node = node;
     }
 
     @Override
     public void run() {
-        Disk disk = node.get_disk();
+        final Disk disk = node.get_disk();
+        
         if (disk.get_used_space() <= disk_space_to_reclaim) {
             System.out.println("Reclaim completed, no need to transfer any files!");
         } else {
-            for (Map.Entry<Long, String> entry : node.get_files_backed_up().entrySet()) {
-                long key = entry.getKey();
-                String file_name = entry.getValue();
-                String file_path = node.get_files_path() + '/' + file_name;
-                Path path = Paths.get(file_path);
+            List<Long> keys_to_delete = new ArrayList<Long>(); 
+            for (final Map.Entry<Long, String> entry : node.get_files_backed_up().entrySet()) {
+                final long key = entry.getKey();
+                final String file_name = entry.getValue();
+                final String file_path = node.get_files_path() + '/' + file_name;
+                final Path path = Paths.get(file_path);
 
                 /* Request a backup of the file in the successor peer */
-                Message msg = new Message(MessageType.BACKUP_FILE, node.get_address(), node.get_address(),
+                final Message msg = new Message(MessageType.BACKUP_FILE, node.get_address(), node.get_address(),
                     new Key(key), path.getFileName().toString(), 1, true);
 
                 byte[] file_content = null;
                 try {
                     file_content = Files.readAllBytes(path);
                     msg.set_body(file_content);
-                } catch (IOException e) {
+                } catch (final IOException e) {
                     e.printStackTrace();
                 }
 
@@ -50,11 +54,11 @@ public class Reclaim implements Runnable {
 
                 /* Remove the file from this peer */
                 disk.decrease_used_space(file_content.length);
-                node.deleteFile_files_backed_up(key);
+                keys_to_delete.add(key);
                 node.add_cancelled_backup(key);
                 try {
                     Files.delete(path);
-                } catch (IOException e) {
+                } catch (final IOException e) {
                     e.printStackTrace();
                 }
 
@@ -63,9 +67,11 @@ public class Reclaim implements Runnable {
                     break;
                 }
             }
+            for (Long key: keys_to_delete) {
+                node.deleteFile_files_backed_up(key);
+            }
         }
         disk.set_max_capacity(disk_space_to_reclaim);
         disk.print_state();
     }
-    
 }
