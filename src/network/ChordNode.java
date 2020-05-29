@@ -1,6 +1,7 @@
 package src.network;
 
 import java.net.InetSocketAddress;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -35,7 +36,7 @@ public class ChordNode implements RMI {
     private final PredecessorThread predecessor_thread;
     
     private InetSocketAddress predecessor;
-    private ConcurrentHashMap<Integer, InetSocketAddress> finger_table;
+    private HashMap<Integer, InetSocketAddress> finger_table;
     private String files_path;
 
     private Disk disk = new Disk();
@@ -53,7 +54,7 @@ public class ChordNode implements RMI {
         System.out.println("Key: " + local_key);
 
         // Initialize finger table
-        finger_table = new ConcurrentHashMap<Integer, InetSocketAddress>();
+        finger_table = new HashMap<Integer, InetSocketAddress>();
         for (int i = 1; i <= KEY_SIZE; i++) {
             update_ith_finger(i, null);
         }
@@ -68,7 +69,7 @@ public class ChordNode implements RMI {
         predecessor_thread = new PredecessorThread(this, 3000);
 
         // Start server
-        server = new Server(this, local_address.getPort());
+        server = new Server(this, local_address);
         server.start();
 
         // Initialize file system

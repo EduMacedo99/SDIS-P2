@@ -2,6 +2,8 @@ package src.network;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
@@ -12,17 +14,19 @@ public class Server extends Thread {
     private ChordNode node;
     private SSLServerSocket server_socket;
 
-    public Server(ChordNode node, int port) {
+    public Server(ChordNode node, InetSocketAddress node_address) { 
         this.node = node;
-        initialize_server_socket(port);
+        initialize_server_socket(node_address);
         System.out.println("Server Ready!");
     }
 
-    private void initialize_server_socket(int port) {
+    private void initialize_server_socket(InetSocketAddress node_address) {
         SSLServerSocketFactory ssl_server_socket_factory = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
+        int port = node_address.getPort();
+        InetAddress address = node_address.getAddress();
 
         try {
-            server_socket = (SSLServerSocket) ssl_server_socket_factory.createServerSocket(port);
+            server_socket = (SSLServerSocket) ssl_server_socket_factory.createServerSocket(port, 0, address);
             server_socket.setEnabledCipherSuites(server_socket.getSupportedCipherSuites());
 
         } catch (IOException e) {
@@ -56,12 +60,8 @@ public class Server extends Thread {
         Message message = null;
         try {
             message = (Message) input.readObject();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ClassCastException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            System.err.println("Error while reading message!");
         }
 
         MessageReceiver.handle_message(message, node, socket);

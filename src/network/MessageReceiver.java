@@ -78,6 +78,8 @@ public class MessageReceiver {
         }
     }
 
+    /* Handlers for each message type */
+
     private static void handle_are_you_alive(ChordNode node, SSLSocket socket) {
         Message response = new Message(MessageType.I_AM_ALIVE);
         send_response(node, response, socket);

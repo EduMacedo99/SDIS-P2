@@ -12,19 +12,19 @@ import src.network.RMI;
 public class Peer {
 
     public static void main(final String[] args) {
-        if (args.length != 2 && args.length != 4) {
-            System.out.println("Usage: <port> <access_point> [<contact_address> <contact_port>]");
+        if (args.length != 3 && args.length != 5) {
+            System.out.println("Usage: <host_address> <port> <access_point> [<contact_address> <contact_port>]");
             return;
         }
 
-        final String host_address = "localhost";
-        final int port = Integer.parseInt(args[0]);
-        final String access_point = args[1];
+        final String host_address = args[0];
+        final int port = Integer.parseInt(args[1]);
+        final String access_point = args[2];
         final InetSocketAddress local_address = new InetSocketAddress(host_address, port);
         InetSocketAddress contact = local_address;
-        if (args.length == 4) {
-            final String contact_address = args[2];
-            final int contact_port = Integer.parseInt(args[3]);
+        if (args.length == 5) {
+            final String contact_address = args[3];
+            final int contact_port = Integer.parseInt(args[4]);
             contact = new InetSocketAddress(contact_address, contact_port);
         }
 

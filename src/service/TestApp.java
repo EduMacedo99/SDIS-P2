@@ -73,6 +73,7 @@ public class TestApp {
 
         } catch (Exception e) {
             System.out.println("Could not connect to RMI service!");
+            System.out.println("You may have killed the peer who created the circle...");
         }
     }
 }
